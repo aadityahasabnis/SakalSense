@@ -13,7 +13,7 @@
     "clean": "pnpm -r clean && rm -f .eslintcache && pnpm store prune"
   },
   "keywords": [],
-  "author": "",
+  "author": "Aaditya Hasabnis",
   "license": "ISC",
   "packageManager": "pnpm@10.20.0",
   "devDependencies": {
