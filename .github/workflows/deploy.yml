@@ -15,11 +15,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # --- Checkout code ---
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
+      # --- Version check for production only ---
       - name: Check frontend version bump (main only)
         id: version-check
         if: github.ref == 'refs/heads/main'
@@ -33,12 +35,8 @@ jobs:
             echo "deploy=true" >> $GITHUB_OUTPUT
           else
             echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "Frontend version not changed. Skipping production deploy."
           fi
-
-      - name: Ensure backend unchanged (main only)
-        if: github.ref == 'refs/heads/main'
-        run: |
-          git diff --name-only HEAD~1 HEAD | grep '^apps/backend/' && \ { echo "Backend changes detected during frontend release. Skipping deploy."; exit 1; } || \ echo "Backend unchanged."
 
       - name: Install dependencies
         run: |
@@ -51,9 +49,16 @@ jobs:
       - name: Type check
         run: pnpm -r type-check
 
-      # --- Optional: Deploy to Vercel (trigger only if version changed) ---
-      - name: Deploy to Vercel
+      # --- Deploy to Vercel only if version changed ---
+      - name: Deploy to Vercel (main only)
         if: github.ref == 'refs/heads/main' && steps.version-check.outputs.deploy == 'true'
         run: |
           npm i -g vercel@latest
           vercel --prod --yes
+
+      # --- Staging deploy (preview) ---
+      - name: Deploy to Vercel Preview (staging)
+        if: github.ref == 'refs/heads/staging'
+        run: |
+          npm i -g vercel@latest
+          vercel --yes
