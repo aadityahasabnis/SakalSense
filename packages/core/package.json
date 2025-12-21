@@ -13,7 +13,7 @@
     "clean": "rm -rf dist .eslintcache"
   },
   "keywords": [],
-  "author": "",
+  "author": "Aaditya Hasabnis",
   "license": "ISC",
   "packageManager": "pnpm@10.20.0"
 }
