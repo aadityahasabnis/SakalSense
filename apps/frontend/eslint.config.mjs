@@ -1,6 +1,6 @@
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import pluginNext from "@next/eslint-plugin-next";
+import pluginNext from "@next/eslint-plugin-next/dist/index.js";
 import pluginJs from "@eslint/js";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import tsParser from "@typescript-eslint/parser";
@@ -9,7 +9,6 @@ import pluginReactHooks from "eslint-plugin-react-hooks";
 import pluginImport from "eslint-plugin-import";
 import pluginTailwindcss from "eslint-plugin-tailwindcss";
 import pluginSonarjs from "eslint-plugin-sonarjs";
-import pluginStylistic from "@stylistic/eslint-plugin-ts";
 import globals from "globals";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -38,7 +37,6 @@ export default [
     ]
   },
   pluginJs.configs.recommended,
-  pluginNext.configs.recommended,
   {
     files: ["src/**/*.{ts,tsx}", "app/**/*.{ts,tsx}", "**/*.ts", "**/*.tsx"],
     languageOptions: {
@@ -60,7 +58,6 @@ export default [
       react: pluginReact,
       "react-hooks": pluginReactHooks,
       "@typescript-eslint": tsPlugin,
-      "@stylistic/ts": pluginStylistic,
       "@next/next": pluginNext,
       import: pluginImport,
       tailwindcss: pluginTailwindcss,
@@ -81,7 +78,6 @@ export default [
     },
     rules: {
       ...pluginJs.configs.recommended.rules,
-      ...pluginNext.configs.recommended.rules,
 
       "no-var": "error",
       "prefer-const": "error",
@@ -138,11 +134,6 @@ export default [
       "@typescript-eslint/prefer-nullish-coalescing": "error",
       "@typescript-eslint/prefer-optional-chain": "error",
       "@typescript-eslint/prefer-readonly": "error",
-
-      "@stylistic/ts/member-delimiter-style": ["error", {
-        multiline: { delimiter: "semi", requireLast: true },
-        singleline: { delimiter: "semi", requireLast: false }
-      }],
 
       "react-hooks/rules-of-hooks": "error",
       "react/jsx-no-useless-fragment": ["error", { allowExpressions: true }],

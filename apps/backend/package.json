@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "Express backend for SakalSense",
   "private": true,
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
