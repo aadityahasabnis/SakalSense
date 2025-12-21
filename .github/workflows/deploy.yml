@@ -1,4 +1,4 @@
-name: Frontend Release Gate
+name: Deplpoy to Vercel
 
 on:
   push:
@@ -25,22 +25,14 @@ jobs:
         run: |
           PREV=$(git show HEAD~1:apps/frontend/package.json | jq -r .version)
           CURR=$(jq -r .version apps/frontend/package.json)
-
           echo "Prev: $PREV"
           echo "Curr: $CURR"
-
-          [ "$PREV" != "$CURR" ] || {
-            echo "Frontend version must be incremented for production."
-            exit 1
-          }
+          [ "$PREV" != "$CURR" ] || {echo "Frontend version must be incremented for production." exit 1 }
 
       - name: Ensure backend unchanged (prod only)
         if: github.ref == 'refs/heads/main'
         run: |
-          git diff --name-only HEAD~1 HEAD | grep '^apps/backend/' && {
-            echo "Backend changes detected during frontend release."
-            exit 1
-          } || echo "Backend unchanged."
+          git diff --name-only HEAD~1 HEAD | grep '^apps/backend/' && { echo "Backend changes detected during frontend release." exit 1 } || echo "Backend unchanged."
 
       - name: Install dependencies
         run: |
