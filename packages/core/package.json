@@ -1,0 +1,18 @@
+{
+  "name": "@sakalsense/core",
+  "version": "0.0.0",
+  "description": "Shared TypeScript utilities and types for SakalSense",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --check src",
+    "clean": "rm -rf dist .eslintcache"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.20.0"
+}
