@@ -1,4 +1,4 @@
-name: Deplpoy to Vercel
+name: Deploy to Vercel
 
 on:
   push:
@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  validate-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,19 +20,25 @@ jobs:
         with:
           fetch-depth: 2
 
-      - name: Check frontend version bump (prod only)
+      - name: Check frontend version bump (main only)
+        id: version-check
         if: github.ref == 'refs/heads/main'
         run: |
           PREV=$(git show HEAD~1:apps/frontend/package.json | jq -r .version)
           CURR=$(jq -r .version apps/frontend/package.json)
           echo "Prev: $PREV"
           echo "Curr: $CURR"
-          [ "$PREV" != "$CURR" ] || {echo "Frontend version must be incremented for production." exit 1 }
 
-      - name: Ensure backend unchanged (prod only)
+          if [ "$PREV" != "$CURR" ]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Ensure backend unchanged (main only)
         if: github.ref == 'refs/heads/main'
         run: |
-          git diff --name-only HEAD~1 HEAD | grep '^apps/backend/' && { echo "Backend changes detected during frontend release." exit 1 } || echo "Backend unchanged."
+          git diff --name-only HEAD~1 HEAD | grep '^apps/backend/' && \ { echo "Backend changes detected during frontend release. Skipping deploy."; exit 1; } || \ echo "Backend unchanged."
 
       - name: Install dependencies
         run: |
@@ -44,3 +50,10 @@ jobs:
 
       - name: Type check
         run: pnpm -r type-check
+
+      # --- Optional: Deploy to Vercel (trigger only if version changed) ---
+      - name: Deploy to Vercel
+        if: github.ref == 'refs/heads/main' && steps.version-check.outputs.deploy == 'true'
+        run: |
+          npm i -g vercel@latest
+          vercel --prod --yes

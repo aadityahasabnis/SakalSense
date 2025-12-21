@@ -12,5 +12,5 @@
   },
   "prettier.requireConfig": true,
   "typescript.tsdk": "node_modules/typescript/lib",
-  "cSpell.words": ["sakalsense", "SakalSense"]
+  "cSpell.words": ["sakalsense", "SakalSense", "Vercel"]
 }
