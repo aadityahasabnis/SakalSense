@@ -4,24 +4,34 @@
   "description": "Express backend for SakalSense",
   "private": true,
   "type": "module",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "dev": "tsx watch --env-file=.env.local src/index.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "node dist/index.js",
+    "start": "node --env-file=.env.local dist/index.js",
     "type-check": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src --ext .ts",
     "format": "prettier --check src",
     "clean": "rm -rf dist .eslintcache"
   },
   "dependencies": {
-    "@sakalsense/core": "workspace:*"
+    "@sakalsense/core": "workspace:*",
+    "compression": "^1.8.1",
+    "cors": "^2.8.5",
+    "express": "^5.2.1",
+    "helmet": "^8.1.0",
+    "mongoose": "^9.0.2",
+    "redis": "^5.10.0",
+    "zod": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "tsx": "^4.21.0"
   },
   "keywords": [],
-  "author": "",
+  "author": "Aaditya Hasabnis",
   "license": "ISC",
-  "packageManager": "pnpm@10.20.0",
-  "devDependencies": {
-    "ts-node-dev": "^2.0.0"
-  }
+  "packageManager": "pnpm@10.20.0"
 }
