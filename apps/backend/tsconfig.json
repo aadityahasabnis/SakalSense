@@ -7,8 +7,10 @@
         "noUncheckedIndexedAccess": true,
         "noUnusedLocals": true,
         "noUnusedParameters": true,
-        "module": "CommonJS",
-        "moduleResolution": "Node",
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
         "baseUrl": ".",
         "paths": {
             "@/*": ["src/*"],
@@ -34,5 +36,8 @@
             "@/utils/*": ["src/utils/*"]
         }
     },
-    "include": ["src"]
+    "include": ["src"],
+    "ts-node": {
+        "esm": true
+    }
 }
