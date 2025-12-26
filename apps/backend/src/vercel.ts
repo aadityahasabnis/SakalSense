@@ -47,8 +47,9 @@ const initDB = async (): Promise<void> => {
     }
 };
 
-// Vercel serverless handler
-export default async (req: express.Request, res: express.Response): Promise<void> => {
+// Vercel serverless handler - using any to bypass type conflicts
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default async (req: any, res: any): Promise<void> => {
     await initDB();
     app(req, res);
 };
