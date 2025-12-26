@@ -16,7 +16,8 @@
         "deps:update": "pnpm -r update --latest",
         "deps:up": "pnpm up -r -L",
         "audit": "pnpm audit --audit-level=moderate",
-        "clean": "pnpm -r clean && rm -f .eslintcache && pnpm store prune"
+        "clean": "pnpm -r clean && rm -f .eslintcache && pnpm store prune",
+        "create:sadmin": "tsx --env-file=apps/backend/.env.local apps/backend/scripts/create-administrator.ts"
     },
     "keywords": [],
     "author": "Aaditya Hasabnis",
@@ -24,11 +25,12 @@
     "packageManager": "pnpm@10.26.2",
     "devDependencies": {
         "@types/node": "^25.0.3",
-        "@typescript-eslint/eslint-plugin": "^8.50.0",
-        "@typescript-eslint/parser": "^8.50.0",
+        "@typescript-eslint/eslint-plugin": "^8.50.1",
+        "@typescript-eslint/parser": "^8.50.1",
         "eslint": "^9.39.2",
         "eslint-config-prettier": "^10.1.8",
         "prettier": "^3.7.4",
+        "tsx": "^4.21.0",
         "typescript": "^5.9.3"
     }
 }

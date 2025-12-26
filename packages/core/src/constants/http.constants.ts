@@ -33,3 +33,19 @@ export const HTTP_ERROR_MESSAGES = {
     INTERNAL_ERROR: 'An unexpected error occurred',
     SERVICE_UNAVAILABLE: 'Service temporarily unavailable',
 } as const;
+
+// HTTP_METHOD: Standard HTTP methods for type-safe usage
+export const HTTP_METHOD = {
+    GET: 'GET',
+    POST: 'POST',
+    PUT: 'PUT',
+    PATCH: 'PATCH',
+    DELETE: 'DELETE',
+} as const;
+
+export type HttpMethod = (typeof HTTP_METHOD)[keyof typeof HTTP_METHOD];
+
+// Debug Log Configuration - API request/response logging
+export const DEBUG_LOG_TTL = 604800; // 7 days in seconds
+export const DEBUG_LOG_KEY_PREFIX = 'debuglog';
+export const DEBUG_LOG_EXCLUDED_PATHS = ['/api/health'] as const;

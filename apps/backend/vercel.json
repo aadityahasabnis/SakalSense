@@ -1,5 +1,18 @@
 {
     "version": 2,
-    "buildCommand": "pnpm install && pnpm build",
-    "outputDirectory": "dist"
+    "builds": [
+        {
+            "src": "src/server.ts",
+            "use": "@vercel/node",
+            "config": {
+                "maxDuration": 30
+            }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "src/server.ts"
+        }
+    ]
 }

@@ -74,18 +74,11 @@ export const invalidateSession = async (sessionId: string, userId: string, role:
     await redis.del(sessionKey(role, userId, sessionId));
 };
 
-// Update session last active timestamp
+// Update session TTL (refresh expiry without reading/writing full data)
 export const updateSessionActivity = async (sessionId: string, userId: string, role: StakeholderType): Promise<void> => {
     const redis = getRedis();
-    const key = sessionKey(role, userId, sessionId);
-    const data = await redis.get(key);
-
-    if (!data) return;
-
-    const session = JSON.parse(data) as ISession;
-    session.lastActiveAt = new Date().toISOString();
-
-    await redis.setEx(key, SESSION_TTL, JSON.stringify(session));
+    // Single EXPIRE command - much faster than GET + parse + SET
+    await redis.expire(sessionKey(role, userId, sessionId), SESSION_TTL);
 };
 
 // Invalidate all sessions for user (logout everywhere)

@@ -9,6 +9,8 @@ import { redirect } from 'next/navigation';
 
 import { API_CONFIG, type FormDataType, type HttpMethodType, type IApiResponse } from '@sakalsense/core';
 
+import { API_URL, IS_DEVELOPMENT } from '@/env';
+
 // =============================================
 // Types & Interfaces
 // =============================================
@@ -37,13 +39,6 @@ class RedirectError extends Error {
         this.name = 'RedirectError';
     }
 }
-
-// =============================================
-// Configuration
-// =============================================
-
-const API_BASE_URL = process.env.API_URL ?? 'http://localhost:8000/api';
-const IS_DEVELOPMENT = process.env.NODE_ENV === 'development';
 
 // =============================================
 // Logging Utilities
@@ -95,7 +90,7 @@ export const apiCall = async <T = FormDataType>(props: IApiCallProps): Promise<I
     // Extract body from either formData or body property
     const body = 'formData' in props && props.formData ? formDataToJson(props.formData) : 'body' in props && props.body ? props.body : undefined;
 
-    const fullUrl = `${API_BASE_URL}${url}`;
+    const fullUrl = `${API_URL}${url}`;
 
     try {
         // Setup request options

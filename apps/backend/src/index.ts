@@ -1,48 +1,38 @@
 // =============================================
 // SakalSense Backend - Express Application
 // =============================================
-// Express server with support for:
-// - Local development
-// - Vercel serverless deployment
+// Production-ready Express server with:
 // - Database connection pooling
 // - Graceful shutdown handling
+// - Comprehensive error handling
+// - Security best practices
 // =============================================
 
 import express, { type Express } from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
+import { type Server } from 'node:http';
 
 import { ROUTE } from '@sakalsense/core';
 
 import { PORT, NODE_ENV, validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
 import { connectMongoDB, connectRedis, disconnectMongoDB, disconnectRedis } from './db';
 import { apiRouter } from './routes';
-import { errorHandler, requestLogger, corsMiddleware, parseCookies } from './middlewares';
-import { type Server } from 'node:http';
+import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares';
+
+// =============================================
+// Constants
+// =============================================
 
 const SERVER_NAME = 'SakalSense API';
-const SHUTDOWN_TIMEOUT = 5000; // 5 seconds
+const SHUTDOWN_TIMEOUT = 10000; // 10 seconds
 
-let dbInitialized = false;
+// =============================================
+// State Management
+// =============================================
+
 let isShuttingDown = false;
 let httpServer: Server | null = null;
-
-const initializeDatabases = async (): Promise<void> => {
-    if (dbInitialized) {
-        console.log('[Database] Using existing connections');
-        return;
-    }
-
-    try {
-        console.log('[Database] Initializing connections...');
-        await Promise.all([connectMongoDB(), connectRedis()]);
-        dbInitialized = true;
-        console.log('[Database] All connections established');
-    } catch (error) {
-        console.error('[Database] Connection failed:', error);
-        throw error;
-    }
-};
 
 // =============================================
 // Express Application Factory
@@ -56,36 +46,58 @@ const createExpressApp = (): Express => {
     // Disable Express signature for security
     app.disable('x-powered-by');
 
+    // =============================================
     // Security Middleware
-    app.use(helmet({ contentSecurityPolicy: IS_PRODUCTION, crossOriginEmbedderPolicy: IS_PRODUCTION }));
+    // =============================================
+    app.use(
+        helmet({
+            contentSecurityPolicy: IS_PRODUCTION,
+            crossOriginEmbedderPolicy: IS_PRODUCTION,
+        }),
+    );
     app.use(corsMiddleware);
 
+    // =============================================
     // Performance Middleware
+    // =============================================
     app.use(compression());
 
+    // =============================================
     // Body Parsing Middleware
+    // =============================================
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     app.use(parseCookies);
 
-    // Logging Middleware
-    if (IS_DEVELOPMENT) app.use(requestLogger);
+    // =============================================
+    // Debug Logging Middleware (Redis)
+    // =============================================
+    app.use(debugLoggerMiddleware);
 
+    // =============================================
+    // Logging Middleware
+    // =============================================
+    if (IS_DEVELOPMENT) {
+        app.use(requestLogger);
+    }
+
+    // =============================================
+    // API Routes
     // =============================================
     app.use(ROUTE.API, apiRouter);
-    // =============================================
 
-    // Error Handling
+    // =============================================
+    // Error Handling (Must be last)
+    // =============================================
     app.use(errorHandler);
 
     return app;
 };
 
-const app = createExpressApp();
-
 // =============================================
 // Graceful Shutdown Handler
 // =============================================
+
 const gracefulShutdown = async (signal: string): Promise<void> => {
     if (isShuttingDown) {
         console.log(`[${signal}] Shutdown already in progress...`);
@@ -129,21 +141,32 @@ const gracefulShutdown = async (signal: string): Promise<void> => {
 };
 
 // =============================================
-// Local Development Server
+// Application Bootstrap
 // =============================================
 
-const startLocalServer = async (): Promise<void> => {
+/**
+ * Bootstrap function to initialize and start the application
+ * Connects to databases and starts the HTTP server
+ */
+const bootstrap = async (): Promise<void> => {
     try {
         console.log(`\n🚀 Starting ${SERVER_NAME}...`);
         console.log(`📦 Environment: ${NODE_ENV}`);
 
         // Initialize database connections
-        await initializeDatabases();
+        console.log('[Database] Initializing connections...');
+        await Promise.all([connectMongoDB(), connectRedis()]);
+        console.log('[Database] All connections established');
+
+        // Create Express app
+        const app = createExpressApp();
 
         // Start HTTP server
         httpServer = app.listen(PORT, () => {
             console.log(`\n✅ ${SERVER_NAME} is running`);
             console.log(`🌐 Local: http://localhost:${PORT}`);
+            console.log(`📊 Health: http://localhost:${PORT}${ROUTE.API}/health`);
+            console.log(`\n💡 Press Ctrl+C to stop\n`);
         });
 
         // Handle server errors
@@ -175,33 +198,10 @@ const startLocalServer = async (): Promise<void> => {
 };
 
 // =============================================
-// Serverless Handler (Production)
-// =============================================
-app.use(async (_req, res, next) => {
-    if (IS_PRODUCTION) {
-        try {
-            await initializeDatabases();
-        } catch (error) {
-            console.error('[Serverless] Database initialization failed:', error);
-            return res.status(503).json({
-                success: false,
-                message: 'Service temporarily unavailable',
-            });
-        }
-    }
-    next();
-});
-
-export default app;
-
-// =============================================
 // Application Entry Point
 // =============================================
 
-// Run server only in local development
-if (IS_DEVELOPMENT) {
-    startLocalServer().catch((error) => {
-        console.error('❌ Server startup failed:', error);
-        process.exit(1);
-    });
-}
+bootstrap().catch((error) => {
+    console.error('❌ Server startup failed:', error);
+    process.exit(1);
+});

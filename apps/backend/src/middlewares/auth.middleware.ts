@@ -36,10 +36,9 @@ const createAuthMiddleware = (role: StakeholderType): RequestHandler => {
             return;
         }
 
-        // Refresh TTL and update lastActiveAt for active sessions
-        await updateSessionActivity(payload.sessionId, payload.userId, role);
+        // Fire-and-forget: refresh TTL in background (don't block request)
+        updateSessionActivity(payload.sessionId, payload.userId, role);
 
-        // Attach payload to request (access via req.body._user or cast to IAuthenticatedRequest)
         (req as Request & { user: IJWTPayload }).user = payload;
         next();
     };
@@ -73,8 +72,8 @@ export const authenticateAny = (...roles: Array<StakeholderType>): RequestHandle
             return;
         }
 
-        // Refresh TTL and update lastActiveAt for active sessions
-        await updateSessionActivity(payload.sessionId, payload.userId, payload.role);
+        // Fire-and-forget: refresh TTL in background
+        updateSessionActivity(payload.sessionId, payload.userId, payload.role);
         (req as Request & { user: IJWTPayload }).user = payload;
         next();
     };
