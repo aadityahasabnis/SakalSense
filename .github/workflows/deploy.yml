@@ -112,7 +112,7 @@ jobs:
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-              working-directory: apps/backend
               run: |
-                  vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-                  vercel deploy --prod --token=$VERCEL_TOKEN
+                  cd apps/backend
+                  vercel pull --yes --environment=production --token=$VERCEL_TOKEN --cwd .
+                  vercel deploy --prod --token=$VERCEL_TOKEN --cwd .
