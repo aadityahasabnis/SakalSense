@@ -1,6 +1,6 @@
 {
     "name": "@sakalsense/backend",
-    "version": "0.0.28",
+    "version": "0.0.29",
     "description": "Express backend for SakalSense",
     "private": true,
     "type": "module",
@@ -15,6 +15,7 @@
         "clean": "rm -rf dist .eslintcache"
     },
     "dependencies": {
+        "@sakalsense/core": "workspace:*",
         "argon2": "^0.44.0",
         "compression": "^1.8.1",
         "cookie-parser": "^1.4.7",
