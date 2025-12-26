@@ -3,6 +3,7 @@
 import { type JSX, type ReactNode, useState } from 'react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 interface ProvidersProps {
     children: ReactNode;
@@ -23,5 +24,10 @@ export const Providers = ({ children }: ProvidersProps): JSX.Element => {
             }),
     );
 
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+        <QueryClientProvider client={queryClient}>
+            {children}
+            <SpeedInsights />
+        </QueryClientProvider>
+    );
 };
