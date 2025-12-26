@@ -1,13 +1,13 @@
 {
     "name": "@sakalsense/backend",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "description": "Express backend for SakalSense",
     "private": true,
     "type": "module",
     "main": "dist/index.js",
     "scripts": {
         "dev": "tsx watch --env-file=.env.local src/index.ts",
-        "build": "tsc -p tsconfig.json",
+        "build": "tsup",
         "start": "node --env-file=.env.local dist/index.js",
         "type-check": "tsc -p tsconfig.json --noEmit",
         "lint": "eslint src --ext .ts",
@@ -33,6 +33,7 @@
         "@types/cors": "^2.8.19",
         "@types/express": "^5.0.6",
         "@types/jsonwebtoken": "^9.0.10",
+        "tsup": "^8.5.1",
         "tsx": "^4.21.0"
     },
     "keywords": [],
