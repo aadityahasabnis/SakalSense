@@ -77,6 +77,10 @@ jobs:
               if: github.ref == 'refs/heads/main' && (steps.version-frontend.outputs.deploy == 'true' || steps.version-backend.outputs.deploy == 'true')
               run: npm i -g vercel@latest
 
+            - name: Build Core Package
+              if: github.ref == 'refs/heads/main' && (steps.version-frontend.outputs.deploy == 'true' || steps.version-backend.outputs.deploy == 'true')
+              run: pnpm --filter @sakalsense/core build
+
             - name: Deploy Frontend
               if: github.ref == 'refs/heads/main' && steps.version-frontend.outputs.deploy == 'true'
               env:
