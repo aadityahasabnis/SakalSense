@@ -1,6 +1,6 @@
 {
     "name": "@sakalsense/backend",
-    "version": "0.0.9",
+    "version": "0.0.10",
     "description": "Express backend for SakalSense",
     "private": true,
     "type": "module",
