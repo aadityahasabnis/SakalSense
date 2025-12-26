@@ -1,0 +1,27 @@
+services:
+  # Backend Service
+  - type: web
+    name: sakalsense-backend
+    runtime: node
+    region: singapore
+    buildCommand: cd apps/backend && pnpm install && pnpm build
+    startCommand: cd apps/backend && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_USERNAME
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
