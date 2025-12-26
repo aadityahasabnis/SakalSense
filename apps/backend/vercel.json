@@ -2,5 +2,6 @@
     "version": 2,
     "installCommand": "echo 'All dependencies bundled'",
     "buildCommand": "echo 'Pre-built'",
+    "outputDirectory": ".",
     "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }

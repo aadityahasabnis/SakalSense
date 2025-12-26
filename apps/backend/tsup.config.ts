@@ -11,5 +11,6 @@ export default defineConfig({
     splitting: false,
     outExtension: () => ({ js: '.js' }), // Force .js extension
     // Bundle ALL dependencies - Vercel won't run npm install
-    noExternal: [/.*/],    // Add footer to ensure module.exports = default export
-    footer: { js: 'module.exports = module.exports.default || module.exports;' },});
+    noExternal: [/.*/], // Add footer to ensure module.exports = default export
+    footer: { js: 'module.exports = module.exports.default || module.exports;' },
+});
