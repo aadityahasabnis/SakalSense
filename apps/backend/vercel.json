@@ -1,7 +1,13 @@
 {
     "version": 2,
-    "installCommand": "echo 'All dependencies bundled'",
-    "buildCommand": "echo 'Pre-built'",
-    "outputDirectory": ".",
-    "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+    "builds": [
+        {
+            "src": "api/index.js",
+            "use": "@vercel/node",
+            "config": {
+                "includeFiles": ["api/**"]
+            }
+        }
+    ],
+    "routes": [{ "src": "/(.*)", "dest": "/api/index.js" }]
 }

@@ -103,6 +103,8 @@ jobs:
                   # Remove workspace dependency (already bundled by tsup)
                   jq 'del(.dependencies["@sakalsense/core"])' package.json > package.tmp.json
                   mv package.tmp.json package.json
+                  # Remove pnpm-lock.yaml to prevent workspace:* resolution errors
+                  rm -f ../../pnpm-lock.yaml pnpm-lock.yaml
 
             - name: Deploy Backend
               if: github.ref == 'refs/heads/main' && steps.version-backend.outputs.deploy == 'true'
