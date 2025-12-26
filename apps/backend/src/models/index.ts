@@ -1,4 +1,7 @@
-// Models barrel export - centralizes all Mongoose model exports
-// Usage: import { UserModel, SessionModel } from '@/models';
+// =============================================
+// Models Barrel Export
+// =============================================
 
-// Mongoose models will be added here as needed
+export * from './user.model';
+export * from './admin.model';
+export * from './administrator.model';

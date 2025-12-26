@@ -1,5 +1,6 @@
-// Health module barrel export
-// Usage: import { healthRouter } from '@/routes/health';
+// =============================================
+// Health Module Barrel Export
+// =============================================
 
 export * from './health.route';
 export * from './health.controller';

@@ -1,37 +1,42 @@
 {
-  "name": "@sakalsense/backend",
-  "version": "0.0.0",
-  "description": "Express backend for SakalSense",
-  "private": true,
-  "type": "module",
-  "main": "dist/index.js",
-  "scripts": {
-    "dev": "tsx watch --env-file=.env.local src/index.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node --env-file=.env.local dist/index.js",
-    "type-check": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint src --ext .ts",
-    "format": "prettier --check src",
-    "clean": "rm -rf dist .eslintcache"
-  },
-  "dependencies": {
-    "@sakalsense/core": "workspace:*",
-    "compression": "^1.8.1",
-    "cors": "^2.8.5",
-    "express": "^5.2.1",
-    "helmet": "^8.1.0",
-    "mongoose": "^9.0.2",
-    "redis": "^5.10.0",
-    "zod": "^4.2.1"
-  },
-  "devDependencies": {
-    "@types/compression": "^1.8.1",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "tsx": "^4.21.0"
-  },
-  "keywords": [],
-  "author": "Aaditya Hasabnis",
-  "license": "ISC",
-  "packageManager": "pnpm@10.20.0"
+    "name": "@sakalsense/backend",
+    "version": "0.0.1",
+    "description": "Express backend for SakalSense",
+    "private": true,
+    "type": "module",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "tsx watch --env-file=.env.local src/index.ts",
+        "build": "tsc -p tsconfig.json",
+        "start": "node --env-file=.env.local dist/index.js",
+        "type-check": "tsc -p tsconfig.json --noEmit",
+        "lint": "eslint src --ext .ts",
+        "format": "prettier --check src",
+        "clean": "rm -rf dist .eslintcache"
+    },
+    "dependencies": {
+        "@sakalsense/core": "workspace:*",
+        "argon2": "^0.44.0",
+        "compression": "^1.8.1",
+        "cookie-parser": "^1.4.7",
+        "cors": "^2.8.5",
+        "express": "^5.2.1",
+        "helmet": "^8.1.0",
+        "jsonwebtoken": "^9.0.3",
+        "mongoose": "^9.0.2",
+        "redis": "^5.10.0",
+        "zod": "^4.2.1"
+    },
+    "devDependencies": {
+        "@types/compression": "^1.8.1",
+        "@types/cookie-parser": "^1.4.10",
+        "@types/cors": "^2.8.19",
+        "@types/express": "^5.0.6",
+        "@types/jsonwebtoken": "^9.0.10",
+        "tsx": "^4.21.0"
+    },
+    "keywords": [],
+    "author": "Aaditya Hasabnis",
+    "license": "ISC",
+    "packageManager": "pnpm@10.20.0"
 }

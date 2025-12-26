@@ -1,5 +1,6 @@
-// Types barrel export - centralizes all type exports for clean imports
-// Usage: import { NodeEnv, IFormData } from '@sakalsense/core';
+// =============================================
+// Types Barrel Export
+// =============================================
 
-export * from './env.types';
 export * from './common.types';
+export * from './auth.types';

@@ -1,5 +1,6 @@
-// Redis connection handler using official redis package
-// Lazy initialization: Redis client created only when connectRedis() is called
+// =============================================
+// Redis Connection Handler
+// =============================================
 
 import { createClient, type RedisClientType } from 'redis';
 

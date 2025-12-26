@@ -1,12 +1,11 @@
-// HTTP response interfaces with strict typing for API consistency
-// Follows discriminated union pattern: success field determines available properties
+// =============================================
+// HTTP Interfaces - Response structures with strict typing
+// =============================================
 
-import { type HelthType, type IFormData } from '../types';
+import { type HealthStatusType, type FormDataType } from '../types';
 
 // IActionSuccessResponse: Used when API call succeeds
-// TData extends constraint ensures type safety for response data
-// Default undefined allows success responses without data (e.g., DELETE operations)
-interface IActionSuccessResponse<TData extends IFormData | Array<IFormData> | undefined = undefined> {
+interface IActionSuccessResponse<TData extends FormDataType | Array<FormDataType> | undefined = undefined> {
     success: true;
     data?: TData;
 }
@@ -26,16 +25,11 @@ interface IActionErrorResponse {
 }
 
 // IActionResponse: Union type combining all response variants
-// Promise wrapper ensures async handling consistency across all API calls
-// Discriminated union on 'success' allows TypeScript to narrow types in conditionals
-export type IActionResponse<TData extends IFormData | Array<IFormData> | undefined = undefined> =
-    Promise<IActionSuccessResponse<TData> | IActionErrorResponse | IActionMessageResponse>;
+export type IActionResponse<TData extends FormDataType | Array<FormDataType> | undefined = undefined> = Promise<IActionSuccessResponse<TData> | IActionErrorResponse | IActionMessageResponse>;
 
 // IHealthResponse: Dedicated interface for health check endpoint
-// status: Binary health indicator for load balancer compatibility
-// services: Individual service status for debugging connectivity issues
 export interface IHealthResponse {
-    status: HelthType;
+    status: HealthStatusType;
     timestamp: string;
     uptime: string;
     services: {
@@ -54,8 +48,7 @@ export interface IPaginationMeta {
 }
 
 // IPaginatedResponse: Extends success response with pagination metadata
-// Omit<> removes 'data' from base type to redefine it as Array<TData>
-export interface IPaginatedResponse<TData extends IFormData> extends Omit<IActionSuccessResponse<TData>, 'data'> {
+export interface IPaginatedResponse<TData extends FormDataType> extends Omit<IActionSuccessResponse<TData>, 'data'> {
     data: Array<TData>;
     meta: IPaginationMeta;
 }

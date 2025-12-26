@@ -1,5 +1,6 @@
-// HTTP constants for consistent status codes and messages across the application
-// Using 'as const' assertion makes values readonly and enables literal type inference
+// =============================================
+// HTTP Constants - Status codes and error messages
+// =============================================
 
 // HTTP_STATUS: Standard HTTP status codes as constants
 // Prevents magic numbers in codebase, enables autocomplete, and ensures consistency

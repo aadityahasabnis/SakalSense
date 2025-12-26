@@ -1,5 +1,6 @@
-// MongoDB connection handler using Mongoose ODM
-// Provides connection management, event logging, and health check utility
+// =============================================
+// MongoDB Connection Handler
+// =============================================
 
 import mongoose from 'mongoose';
 
@@ -15,10 +16,8 @@ export const connectMongoDB = async (): Promise<void> => {
     await mongoose.connect(DATABASE_URL, { maxPoolSize: NODE_ENV === 'production' ? 100 : 10 });
 };
 
-// disconnectMongoDB: Graceful shutdown for clean process termination
 export const disconnectMongoDB = async (): Promise<void> => {
     await mongoose.disconnect();
 };
 
-// isMongoDBConnected: Health check utility, readyState 1 = connected
 export const isMongoDBConnected = (): boolean => mongoose.connection.readyState === 1;

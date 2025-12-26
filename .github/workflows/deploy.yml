@@ -23,19 +23,37 @@ jobs:
 
       # --- Version check for production only ---
       - name: Check frontend version bump (main only)
-        id: version-check
+        id: version-check-frontend
         if: github.ref == 'refs/heads/main'
         run: |
           PREV=$(git show HEAD~1:apps/frontend/package.json | jq -r .version)
           CURR=$(jq -r .version apps/frontend/package.json)
-          echo "Prev: $PREV"
-          echo "Curr: $CURR"
+          echo "Previous frontend version: $PREV"
+          echo "Current frontend version: $CURR"
 
           if [ "$PREV" != "$CURR" ]; then
             echo "deploy=true" >> $GITHUB_OUTPUT
+            echo "✅ Frontend version changed. Will deploy."
           else
             echo "deploy=false" >> $GITHUB_OUTPUT
-            echo "Frontend version not changed. Skipping production deploy."
+            echo "⏭️ Frontend version not changed. Skipping production deploy."
+          fi
+
+      - name: Check backend version bump (main only)
+        id: version-check-backend
+        if: github.ref == 'refs/heads/main'
+        run: |
+          PREV=$(git show HEAD~1:apps/backend/package.json | jq -r .version)
+          CURR=$(jq -r .version apps/backend/package.json)
+          echo "Previous backend version: $PREV"
+          echo "Current backend version: $CURR"
+
+          if [ "$PREV" != "$CURR" ]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+            echo "✅ Backend version changed. Will deploy."
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+            echo "⏭️ Backend version not changed. Skipping production deploy."
           fi
 
       - name: Install dependencies
@@ -49,16 +67,58 @@ jobs:
       - name: Type check
         run: pnpm -r type-check
 
-      # --- Deploy to Vercel only if version changed ---
-      - name: Deploy to Vercel (main only)
-        if: github.ref == 'refs/heads/main' && steps.version-check.outputs.deploy == 'true'
-        run: |
-          npm i -g vercel@latest
-          vercel --prod --yes
+      # --- Install Vercel CLI ---
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
 
-      # --- Staging deploy (preview) ---
-      - name: Deploy to Vercel Preview (staging)
-        if: github.ref == 'refs/heads/staging'
+      # --- Deploy Frontend to Vercel (Production) ---
+      - name: Deploy Frontend to Vercel (main only)
+        if: github.ref == 'refs/heads/main' && steps.version-check-frontend.outputs.deploy == 'true'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          npm i -g vercel@latest
-          vercel --yes
+          cd apps/frontend
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+
+      # --- Deploy Backend to Vercel (Production) ---
+      - name: Deploy Backend to Vercel (main only)
+        if: github.ref == 'refs/heads/main' && steps.version-check-backend.outputs.deploy == 'true'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          cd apps/backend
+          vercel pull --yes --environment=production --token=$VERCEL_TOKEN
+          vercel build --prod --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+
+      # --- Deploy Frontend to Vercel (Staging Preview) ---
+      - name: Deploy Frontend to Vercel Preview (staging)
+        if: github.ref == 'refs/heads/staging'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          cd apps/frontend
+          vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+          vercel build --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --token=$VERCEL_TOKEN
+
+      # --- Deploy Backend to Vercel (Staging Preview) ---
+      - name: Deploy Backend to Vercel Preview (staging)
+        if: github.ref == 'refs/heads/staging'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          cd apps/backend
+          vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+          vercel build --token=$VERCEL_TOKEN
+          vercel deploy --prebuilt --token=$VERCEL_TOKEN

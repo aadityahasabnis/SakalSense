@@ -1,22 +1,24 @@
-// API interfaces - Type definitions for API requests and responses
-// Used across frontend and backend for type-safe API communication
+// =============================================
+// API Interfaces - Request/Response structures
+// =============================================
 
-import { type IFormData } from '../types';
+import { type ISession } from './auth.interfaces';
+import { type FormDataType } from '../types';
 
-// HTTP methods
-export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+// HTTP method type
+export type HttpMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
 // API request configuration
 export interface IApiRequest {
-    method: HttpMethod;
+    method: HttpMethodType;
     url: string;
-    body?: IFormData;
+    body?: FormDataType;
     headers?: Record<string, string>;
 }
 
 // API response structure
-export interface IApiResponse<T = IFormData> {
-    status: number;
+export interface IApiResponse<T = FormDataType> {
+    status?: number;
     success: boolean;
     data?: T;
     message?: string;
@@ -27,10 +29,12 @@ export interface IApiResponse<T = IFormData> {
         page?: number;
         totalPages?: number;
     };
+    sessionLimitExceeded?: boolean;
+    activeSessions?: Array<ISession>;
 }
 
 // API state for hooks
-export interface IApiState<T = IFormData> {
+export interface IApiState<T = FormDataType> {
     data: T | null;
     loading: boolean;
     error: string | null;

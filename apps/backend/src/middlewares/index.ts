@@ -1,7 +1,9 @@
-// Middlewares barrel export - centralizes all middleware exports
-// Usage: import { asyncHandler, errorHandler, requestLogger } from '@/middlewares';
+// =============================================
+// Middlewares Barrel Export
+// =============================================
 
 export * from './asyncHandler';
 export * from './errorHandler';
 export * from './requestLogger';
 export * from './cors.middleware';
+export * from './auth.middleware';

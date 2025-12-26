@@ -1,8 +1,7 @@
-// @sakalsense/core - Main barrel export
-// Centralizes all exports for single import path across the monorepo
-// Usage: import { NodeEnv, IActionResponse, HTTP_STATUS } from '@sakalsense/core';
+// =============================================
+// @sakalsense/core - Main Barrel Export
+// =============================================
 
-// Types - Type definitions for strict typing across frontend and backend
 export * from './types';
 
 // Interfaces - Shared interfaces for API responses and data structures

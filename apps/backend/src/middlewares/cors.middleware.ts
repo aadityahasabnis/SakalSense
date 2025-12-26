@@ -1,5 +1,6 @@
-// CORS middleware configuration - controls cross-origin resource sharing
-// Supports multiple origins for mobile app, web app, etc.
+// =============================================
+// CORS Middleware - Cross-origin resource sharing config
+// =============================================
 
 import cors from 'cors';
 

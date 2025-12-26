@@ -1,4 +1,5 @@
-// Config barrel export - centralizes all configuration exports
-// Usage: import { PORT, NODE_ENV, validateEnv } from '@/config';
+// =============================================
+// Config Barrel Export
+// =============================================
 
 export * from './env';

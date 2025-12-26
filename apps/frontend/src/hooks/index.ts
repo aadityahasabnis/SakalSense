@@ -1,4 +1,5 @@
 // Hooks barrel export - Custom React hooks
-// Usage: import { useApi, useMutation } from '@/hooks';
+// Usage: import { useAPIQuery, useAPIAction } from '@/hooks';
 
-export { };
+export { useAPIQuery } from './useAPIQuery';
+export { useAPIAction } from './useAPIAction';

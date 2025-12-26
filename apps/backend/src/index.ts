@@ -1,16 +1,18 @@
-// Express application entry point
-// Env vars loaded via CLI: tsx watch --env-file=.env.local
+// =============================================
+// Express Application Entry Point
+// =============================================
 
 import express from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
 
+import { ROUTE } from '@sakalsense/core';
+
 import { PORT, NODE_ENV, validateEnv } from './config';
 import { connectMongoDB, connectRedis } from './db';
 import { apiRouter } from './routes';
-import { errorHandler, requestLogger, corsMiddleware } from './middlewares';
+import { errorHandler, requestLogger, corsMiddleware, parseCookies } from './middlewares';
 
-// bootstrap: Async function for server initialization
 const bootstrap = async (): Promise<void> => {
     validateEnv();
 
@@ -23,15 +25,15 @@ const bootstrap = async (): Promise<void> => {
     // Performance
     app.use(compression());
 
-    // Body parsers
+    // Body parsers + Cookies
     app.use(express.json());
     app.use(express.urlencoded({ extended: true }));
+    app.use(parseCookies);
 
     // Logging
     app.use(requestLogger);
 
-    // Routes
-    app.use('/api', apiRouter);
+    app.use(ROUTE.API, apiRouter);
 
     // Error handler (must be last)
     app.use(errorHandler);
@@ -40,7 +42,6 @@ const bootstrap = async (): Promise<void> => {
     await connectMongoDB();
     await connectRedis();
 
-    // Start server
     app.listen(PORT, () => console.log(`[Server] Running on http://localhost:${PORT} (${NODE_ENV})`));
 };
 

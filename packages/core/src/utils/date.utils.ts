@@ -18,16 +18,7 @@ export interface DateFormatOptions {
 // Set timeOnly: true to show only time (like formatTime did before)
 export const formatDate = (date: Date | string | number, options: DateFormatOptions = {}): string => {
     const d = new Date(date);
-    const {
-        locale = 'en-IN',
-        timeOnly = false,
-        includeTime = false,
-        includeSeconds = false,
-        use24Hour = false,
-        shortMonth = true,
-        includeYear = true,
-        includeWeekday = false,
-    } = options;
+    const { locale = 'en-IN', timeOnly = false, includeTime = false, includeSeconds = false, use24Hour = false, shortMonth = true, includeYear = true, includeWeekday = false } = options;
 
     // Time-only mode
     if (timeOnly) {
@@ -87,7 +78,7 @@ export const formatDuration = (seconds: number, options: DurationOptions = {}): 
         if (includeSeconds && secs > 0 && days === 0) parts.push(`${secs} second${secs !== 1 ? 's' : ''}`);
     }
 
-    return parts.length > 0 ? parts.join(short ? ' ' : ', ') : (short ? '0s' : '0 seconds');
+    return parts.length > 0 ? parts.join(short ? ' ' : ', ') : short ? '0s' : '0 seconds';
 };
 
 // formatISODate: Returns ISO date string (YYYY-MM-DD)

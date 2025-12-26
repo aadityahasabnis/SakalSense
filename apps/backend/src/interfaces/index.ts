@@ -1,5 +1,5 @@
-// Interfaces barrel export - centralizes all backend-specific interface exports
-// For shared interfaces, use @sakalsense/core instead
-// Usage: import { IAuthenticatedRequest } from '@/interfaces';
+// =============================================
+// Interfaces Barrel Export
+// =============================================
 
-// Backend-specific interfaces will be added here as needed
+export * from './express.interfaces';
