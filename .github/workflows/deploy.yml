@@ -75,7 +75,7 @@ jobs:
             # --- Deploy (only on main with version change) ---
             - name: Install Vercel CLI
               if: github.ref == 'refs/heads/main' && (steps.version-frontend.outputs.deploy == 'true' || steps.version-backend.outputs.deploy == 'true')
-              run: npm i -g vercel@latest
+              run: pnpm add -g vercel@latest
 
             - name: Build Core Package
               if: github.ref == 'refs/heads/main' && (steps.version-frontend.outputs.deploy == 'true' || steps.version-backend.outputs.deploy == 'true')
@@ -110,7 +110,6 @@ jobs:
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-              working-directory: apps/backend
               run: |
                   vercel pull --yes --environment=production --token=$VERCEL_TOKEN
                   vercel deploy --prod --token=$VERCEL_TOKEN
