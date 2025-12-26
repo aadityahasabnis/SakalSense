@@ -52,5 +52,8 @@ const createExpressApp = (): Express => {
 
 const app = createExpressApp();
 
-// Vercel serverless handler - wraps Express app
+// Vercel serverless handler
 export default app;
+
+// CommonJS export for Vercel (tsup will handle this)
+export { app };
