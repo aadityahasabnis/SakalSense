@@ -96,16 +96,6 @@ jobs:
               if: github.ref == 'refs/heads/main' && steps.version-backend.outputs.deploy == 'true'
               run: pnpm --filter @sakalsense/backend build
 
-            - name: Prepare Backend for Vercel
-              if: github.ref == 'refs/heads/main' && steps.version-backend.outputs.deploy == 'true'
-              run: |
-                  cd apps/backend
-                  # Remove workspace dependency (it's bundled by tsup)
-                  jq 'del(.dependencies["@sakalsense/core"])' package.json > package.tmp.json
-                  mv package.tmp.json package.json
-                  # Create pnpm-lock.yaml for Vercel
-                  pnpm install --lockfile-only --ignore-scripts 2>/dev/null || true
-
             - name: Deploy Backend
               if: github.ref == 'refs/heads/main' && steps.version-backend.outputs.deploy == 'true'
               env:
@@ -115,4 +105,4 @@ jobs:
               run: |
                   cd apps/backend
                   vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-                  vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+                  vercel deploy --prod --token=$VERCEL_TOKEN

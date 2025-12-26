@@ -1,5 +1,7 @@
 {
     "version": 2,
+    "installCommand": "echo 'Dependencies bundled - skipping install'",
+    "buildCommand": "echo 'Pre-built - skipping build'",
     "functions": {
         "dist/server.js": {
             "runtime": "nodejs20.x",
