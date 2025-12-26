@@ -52,4 +52,8 @@ const createExpressApp = (): Express => {
 
 const app = createExpressApp();
 
+// Vercel serverless handler - wraps Express app
 export default app;
+
+// Alternative: Export as handler function for Vercel
+module.exports = app;
