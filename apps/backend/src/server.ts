@@ -7,10 +7,10 @@ import compression from 'compression';
 import serverless from 'serverless-http';
 
 import { ROUTE } from 'sakalsense-core';
-import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
-import { connectMongoDB, connectRedis } from './db';
-import { apiRouter } from './routes';
-import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares';
+import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config/index.js';
+import { connectMongoDB, connectRedis } from './db/index.js';
+import { apiRouter } from './routes/index.js';
+import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares/index.js';
 
 let dbConnected = false;
 
@@ -55,7 +55,7 @@ const createExpressApp = (): Express => {
         try {
             await connectDatabases();
             next();
-        } catch (_error) {
+        } catch {
             res.status(503).json({
                 error: 'Service Unavailable',
                 message: 'Database connection failed',
