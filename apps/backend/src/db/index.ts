@@ -2,5 +2,5 @@
 // Database Barrel Export
 // =============================================
 
-export * from './mongodb';
-export * from './redis';
+export * from './mongodb.js';
+export * from './redis.js';

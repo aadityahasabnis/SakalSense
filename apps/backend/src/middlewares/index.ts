@@ -2,9 +2,9 @@
 // Middlewares Barrel Export
 // =============================================
 
-export * from './asyncHandler';
-export * from './errorHandler';
-export * from './requestLogger';
-export * from './cors.middleware';
-export * from './auth.middleware';
-export * from './debugLogger.middleware';
+export * from './asyncHandler.js';
+export * from './errorHandler.js';
+export * from './requestLogger.js';
+export * from './cors.middleware.js';
+export * from './auth.middleware.js';
+export * from './debugLogger.middleware.js';

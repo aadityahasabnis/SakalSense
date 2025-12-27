@@ -6,9 +6,9 @@ import { Router, type Router as IRouter } from 'express';
 
 import { ROUTE } from 'sakalsense-core';
 
-import { userAuthRouter } from './user.auth.routes';
-import { adminAuthRouter } from './admin.auth.routes';
-import { administratorAuthRouter } from './administrator.auth.routes';
+import { userAuthRouter } from './user.auth.routes.js';
+import { adminAuthRouter } from './admin.auth.routes.js';
+import { administratorAuthRouter } from './administrator.auth.routes.js';
 
 export const authRouter: IRouter = Router();
 

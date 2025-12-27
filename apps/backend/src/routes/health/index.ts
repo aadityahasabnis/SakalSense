@@ -2,5 +2,5 @@
 // Health Module Barrel Export
 // =============================================
 
-export * from './health.route';
-export * from './health.controller';
+export * from './health.route.js';
+export * from './health.controller.js';

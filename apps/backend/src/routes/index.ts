@@ -6,8 +6,8 @@ import { Router, type Router as IRouter } from 'express';
 
 import { ROUTE } from 'sakalsense-core';
 
-import { healthRouter } from './health';
-import { authRouter } from './auth';
+import { healthRouter } from './health/index.js';
+import { authRouter } from './auth/index.js';
 
 export const apiRouter: IRouter = Router();
 
