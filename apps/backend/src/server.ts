@@ -1,5 +1,5 @@
 // =============================================
-// Vercel Serverless Entry Point (Clean Version)
+// Vercel Serverless Entry Point
 // =============================================
 
 import express, { type Express } from 'express';
@@ -11,17 +11,8 @@ const helmet = require('helmet');
 
 import { ROUTE } from 'sakalsense-core';
 import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
-import { connectMongoDB, connectRedis } from './db';
 import { apiRouter } from './routes';
 import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares';
-
-let dbConnected = false;
-
-const connectDatabases = async (): Promise<void> => {
-    if (dbConnected) return;
-    await Promise.all([connectMongoDB(), connectRedis()]);
-    dbConnected = true;
-};
 
 const createExpressApp = (): Express => {
     validateEnv();
@@ -29,24 +20,27 @@ const createExpressApp = (): Express => {
     const app = express();
     app.disable('x-powered-by');
 
+    // Security & CORS
     app.use(helmet({ contentSecurityPolicy: IS_PRODUCTION, crossOriginEmbedderPolicy: IS_PRODUCTION }));
-
     app.use(corsMiddleware);
     app.use(compression());
+
+    // Parsing
     app.use(express.json({ limit: '10mb' }));
     app.use(express.urlencoded({ extended: true, limit: '10mb' }));
     app.use(parseCookies);
-    app.use(debugLoggerMiddleware);
 
+    // Logging (development only)
     if (IS_DEVELOPMENT) {
         app.use(requestLogger);
     }
 
-    app.use(async (_req, _res, next) => {
-        await connectDatabases();
-        next();
-    });
+    // Debug logger (production only)
+    if (IS_PRODUCTION) {
+        app.use(debugLoggerMiddleware);
+    }
 
+    // Routes
     app.use(ROUTE.API, apiRouter);
     app.use(errorHandler);
 
@@ -54,12 +48,6 @@ const createExpressApp = (): Express => {
 };
 
 const app = createExpressApp();
-
-// Lazy-load database connections on first request
-app.use(async (_req, _res, next) => {
-    await connectDatabases();
-    next();
-});
 
 // Vercel serverless - export app directly
 export default app;
