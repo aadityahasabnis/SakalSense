@@ -3,7 +3,6 @@
 // =============================================
 
 import express, { type Express } from 'express';
-import * as helmetModule from 'helmet';
 import compression from 'compression';
 import serverless from 'serverless-http';
 
@@ -12,16 +11,14 @@ import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
 import { apiRouter } from './routes';
 import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares';
 
-const helmet = helmetModule.default;
-
 const createExpressApp = (): Express => {
     validateEnv();
 
     const app = express();
     app.disable('x-powered-by');
 
-    // Security & CORS
-    app.use(helmet({ contentSecurityPolicy: IS_PRODUCTION, crossOriginEmbedderPolicy: IS_PRODUCTION }));
+    // CORS
+    app.use(corsMiddleware);
     app.use(corsMiddleware);
     app.use(compression());
 
