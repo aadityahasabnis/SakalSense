@@ -1,6 +1,6 @@
 {
     "name": "@sakalsense/backend",
-    "version": "0.0.42",
+    "version": "0.0.43",
     "description": "Express backend for SakalSense",
     "private": true,
     "type": "module",
@@ -21,7 +21,7 @@
         "cookie-parser": "^1.4.7",
         "cors": "^2.8.5",
         "express": "^5.2.1",
-        "helmet": "^8.1.0",
+        "helmet": "^7.2.0",
         "jsonwebtoken": "^9.0.3",
         "mongoose": "^9.0.2",
         "redis": "^5.10.0",
