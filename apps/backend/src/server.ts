@@ -46,9 +46,10 @@ const createExpressApp = (): Express => {
         app.use(requestLogger);
     }
 
-    if (IS_PRODUCTION) {
-        app.use(debugLoggerMiddleware);
-    }
+    // Debug Logger temporarily disabled for debugging timeout
+    // if (IS_PRODUCTION) {
+    //     app.use(debugLoggerMiddleware);
+    // }
 
     // Database connection middleware - lazy connect on first request
     app.use(async (_req, res, next) => {
