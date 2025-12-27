@@ -2,7 +2,7 @@
 // User Routes - USER stakeholder endpoints
 // =============================================
 
-import { path, ROUTE, withId } from './routes.constants';
+import { path, ROUTE, withId } from './routes.constants.js';
 
 // ─────────────────────────────────────────────
 // Base Paths
