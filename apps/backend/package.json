@@ -1,12 +1,12 @@
 {
     "name": "@sakalsense/backend",
-    "version": "0.0.51",
+    "version": "0.0.52",
     "description": "Express backend for SakalSense",
     "private": true,
     "type": "module",
     "main": "dist/server.js",
     "scripts": {
-        "dev": "tsx watch --env-file=.env.local src/index.ts",
+        "dev": "tsx watch --env-file=.env.local src/dev.ts",
         "build": "tsup",
         "start": "node --env-file=.env.local dist/index.js",
         "type-check": "tsc -p tsconfig.json --noEmit",

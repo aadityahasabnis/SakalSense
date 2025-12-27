@@ -37,7 +37,7 @@
         }
     },
     "include": ["src"],
-    "exclude": ["src/index.ts"],
+    "exclude": ["src/dev.ts"],
     "ts-node": {
         "esm": true
     }
