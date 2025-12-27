@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-    entry: { index: 'src/server.ts' }, // Vercel serverless entry
+    entry: { index: 'src/server.ts' },
     format: ['esm'],
     target: 'node20',
     outDir: 'api',
@@ -10,5 +10,6 @@ export default defineConfig({
     bundle: true,
     splitting: false,
     outExtension: () => ({ js: '.js' }),
-    noExternal: [/.*/], // Bundle all dependencies
+    // Externalize native modules to prevent bundling issues
+    external: ['argon2', 'sharp'],
 });

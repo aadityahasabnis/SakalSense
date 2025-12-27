@@ -3,11 +3,9 @@
 // =============================================
 
 import express, { type Express } from 'express';
-import { createRequire } from 'module';
+import helmet from 'helmet';
 import compression from 'compression';
-
-const require = createRequire(import.meta.url);
-const helmet = require('helmet');
+import serverless from 'serverless-http';
 
 import { ROUTE } from 'sakalsense-core';
 import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
@@ -49,5 +47,5 @@ const createExpressApp = (): Express => {
 
 const app = createExpressApp();
 
-// Vercel serverless - export app directly
-export default app;
+// Vercel serverless handler with serverless-http adapter
+export default serverless(app);
