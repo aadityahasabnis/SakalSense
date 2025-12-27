@@ -1,6 +1,6 @@
 {
     "name": "sakalsense-core",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Shared TypeScript utilities, types, and constants for SakalSense",
     "private": false,
     "type": "module",

@@ -66,8 +66,8 @@ importers:
         specifier: ^5.10.0
         version: 5.10.0
       sakalsense-core:
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.0.1
+        version: 1.0.1
       serverless-http:
         specifier: ^4.0.0
         version: 4.0.0
@@ -2736,6 +2736,9 @@ packages:
 
   sakalsense-core@1.0.0:
     resolution: {integrity: sha512-uEg/73Cw3yEHH/uQtO40USy5tXRTkO4EPjmPNfgA+nwF5clfCresJuLZlrQ8PgmemUiiHO4KHnN9BD/O3LixFQ==}
+
+  sakalsense-core@1.0.1:
+    resolution: {integrity: sha512-EFW6+Pha7YhG/katzsDSXEWMCiGcTqC5bv0NCRJGRKvZ9EA2VD/Cbub6pQyKjz1TCrwwoZHflWbS5rFvbX3WeQ==}
 
   scheduler@0.27.0:
     resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
@@ -5705,6 +5708,8 @@ snapshots:
   safer-buffer@2.1.2: {}
 
   sakalsense-core@1.0.0: {}
+
+  sakalsense-core@1.0.1: {}
 
   scheduler@0.27.0: {}
 
