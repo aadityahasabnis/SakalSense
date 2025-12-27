@@ -7,10 +7,10 @@ import compression from 'compression';
 import serverless from 'serverless-http';
 
 import { ROUTE } from 'sakalsense-core';
-import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config/index.js';
+import { validateEnv, IS_DEVELOPMENT } from './config/index.js';
 import { connectMongoDB, connectRedis } from './db/index.js';
 import { apiRouter } from './routes/index.js';
-import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares/index.js';
+import { errorHandler, requestLogger, corsMiddleware, parseCookies } from './middlewares/index.js';
 
 let dbConnected = false;
 
