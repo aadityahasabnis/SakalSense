@@ -18,10 +18,10 @@ const helmet = require('helmet');
 
 import { ROUTE } from 'sakalsense-core';
 
-import { PORT, NODE_ENV, validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
-import { connectMongoDB, connectRedis, disconnectMongoDB, disconnectRedis } from './db';
-import { apiRouter } from './routes';
-import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares';
+import { PORT, NODE_ENV, validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config/index.js';
+import { connectMongoDB, connectRedis, disconnectMongoDB, disconnectRedis } from './db/index.js';
+import { apiRouter } from './routes/index.js';
+import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares/index.js';
 
 // =============================================
 // Constants
