@@ -14,6 +14,7 @@ build/
 out/
 .next/
 *.tsbuildinfo
+apps/backend/api/
 
 # Environment variables
 .env.local

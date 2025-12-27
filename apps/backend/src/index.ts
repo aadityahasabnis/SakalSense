@@ -25,7 +25,7 @@ import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerM
 // =============================================
 
 const SERVER_NAME = 'SakalSense API';
-const SHUTDOWN_TIMEOUT = 10000; // 10 seconds
+const SHUTDOWN_TIMEOUT = 3000; // 3 seconds (Windows kills processes quickly)
 
 // =============================================
 // State Management

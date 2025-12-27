@@ -8,9 +8,9 @@ import { getRedis } from '../db';
 
 // Generate time-sortable ID (timestamp + random suffix)
 const generateId = (): string => {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
-    return `${timestamp}_${random}`;
+    const date = formatDate(new Date(), { includeYear: true, includeTime: true, includeSeconds: true });
+    const random = Math.random().toString(36).substring(2, 4);
+    return `${date}_${random}`;
 };
 
 // Build Redis key with date prefix for efficient querying
