@@ -3,8 +3,11 @@
 // =============================================
 
 import express, { type Express } from 'express';
-import helmet from 'helmet';
+import { createRequire } from 'module';
 import compression from 'compression';
+
+const require = createRequire(import.meta.url);
+const helmet = require('helmet');
 
 import { ROUTE } from 'sakalsense-core';
 import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';

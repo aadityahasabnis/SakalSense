@@ -1,7 +1,7 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-    entry: { index: 'src/server.ts' }, // Output as index.js
+    entry: { index: 'src/server.ts' }, // Vercel serverless entry
     format: ['cjs'],
     target: 'node20',
     outDir: 'api',

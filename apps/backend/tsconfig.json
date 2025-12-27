@@ -37,6 +37,7 @@
         }
     },
     "include": ["src"],
+    "exclude": ["src/index.ts"],
     "ts-node": {
         "esm": true
     }
