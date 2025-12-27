@@ -4,7 +4,7 @@
 
 import { type Request, type Response } from 'express';
 
-import { formatDate, formatDuration, HTTP_STATUS, type IHealthResponse } from '@sakalsense/core';
+import { formatDate, formatDuration, HTTP_STATUS, type IHealthResponse } from 'sakalsense-core';
 
 import { isMongoDBConnected } from '../../db/mongodb';
 import { isRedisConnected } from '../../db/redis';

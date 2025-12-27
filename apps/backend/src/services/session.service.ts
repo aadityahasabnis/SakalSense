@@ -4,7 +4,7 @@
 
 import { randomUUID } from 'crypto';
 
-import { SESSION_LIMIT, SESSION_TTL, type ISession, type StakeholderType, type DeviceType } from '@sakalsense/core';
+import { SESSION_LIMIT, SESSION_TTL, type ISession, type StakeholderType, type DeviceType } from 'sakalsense-core';
 
 import { getRedis } from '../db';
 

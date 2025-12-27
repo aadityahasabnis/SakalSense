@@ -4,7 +4,7 @@
 
 import { type Request, type Response, type NextFunction } from 'express';
 
-import { HTTP_ERROR_MESSAGES, HTTP_STATUS } from '@sakalsense/core';
+import { HTTP_ERROR_MESSAGES, HTTP_STATUS } from 'sakalsense-core';
 
 import { NODE_ENV } from '../config';
 

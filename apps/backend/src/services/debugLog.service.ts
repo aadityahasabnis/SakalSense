@@ -2,7 +2,7 @@
 // Debug Log Service - Redis-based API request/response logging
 // =============================================
 
-import { DEBUG_LOG_TTL, DEBUG_LOG_KEY_PREFIX, formatDate, type IDebugLogEntry } from '@sakalsense/core';
+import { DEBUG_LOG_TTL, DEBUG_LOG_KEY_PREFIX, formatDate, type IDebugLogEntry } from 'sakalsense-core';
 
 import { getRedis } from '../db';
 

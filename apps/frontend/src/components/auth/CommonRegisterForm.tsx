@@ -5,7 +5,7 @@ import { type FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { type ILoginResponse } from '@sakalsense/core';
+import { type ILoginResponse } from 'sakalsense-core';
 
 import { http } from '@/lib/http';
 

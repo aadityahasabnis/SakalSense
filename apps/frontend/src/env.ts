@@ -2,7 +2,7 @@
 // Environment Variables - Type-safe configuration
 // =============================================
 
-import { type NodeEnvType } from '@sakalsense/core';
+import { type NodeEnvType } from 'sakalsense-core';
 
 export const NODE_ENV: NodeEnvType = (process.env.NODE_ENV as NodeEnvType) ?? 'development';
 export const IS_PRODUCTION: boolean = NODE_ENV === 'production';

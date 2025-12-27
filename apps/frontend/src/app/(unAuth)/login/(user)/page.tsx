@@ -1,4 +1,4 @@
-import { USER_API_ROUTES } from '@sakalsense/core';
+import { USER_API_ROUTES } from 'sakalsense-core';
 
 import { CommonLoginForm } from '@/components/auth/CommonLoginForm';
 

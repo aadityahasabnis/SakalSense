@@ -6,7 +6,7 @@
 
 import { cookies } from 'next/headers';
 
-import { AUTH_COOKIE, type IJWTPayload, type StakeholderType } from '@sakalsense/core';
+import { AUTH_COOKIE, type IJWTPayload, type StakeholderType } from 'sakalsense-core';
 
 // =============================================
 // Types

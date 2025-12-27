@@ -1,13 +1,10 @@
 {
     "version": 2,
-    "installCommand": "echo 'Pre-built, skipping install'",
+    "buildCommand": "pnpm install && pnpm run build",
     "builds": [
         {
             "src": "api/index.js",
-            "use": "@vercel/node",
-            "config": {
-                "includeFiles": ["api/**"]
-            }
+            "use": "@vercel/node"
         }
     ],
     "routes": [{ "src": "/(.*)", "dest": "/api/index.js" }]

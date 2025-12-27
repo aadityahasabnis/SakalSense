@@ -3,7 +3,7 @@
 // Handles login, invite-only registration, logout for ADMIN
 // =============================================
 
-import { STAKEHOLDER, type IAdminRegisterRequest } from '@sakalsense/core';
+import { STAKEHOLDER, type IAdminRegisterRequest } from 'sakalsense-core';
 
 import { AdminModel, type IAdminDocument } from '../../models';
 import { createAuthController } from './base.auth.controller';

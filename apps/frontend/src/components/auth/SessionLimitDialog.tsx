@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ADMIN_API_ROUTES, ADMINISTRATOR_API_ROUTES, type ISession, type StakeholderType, USER_API_ROUTES } from '@sakalsense/core';
+import { ADMIN_API_ROUTES, ADMINISTRATOR_API_ROUTES, type ISession, type StakeholderType, USER_API_ROUTES } from 'sakalsense-core';
 
 import { getDeviceIcon } from '@/constants/icons';
 import { http } from '@/lib/http';

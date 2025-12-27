@@ -4,7 +4,7 @@
  * @module lib/http
  */
 
-import { type IApiResponse } from '@sakalsense/core';
+import { type IApiResponse } from 'sakalsense-core';
 
 import { API_URL } from '@/env';
 

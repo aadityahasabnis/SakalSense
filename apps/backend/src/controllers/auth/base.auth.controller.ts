@@ -6,7 +6,7 @@
 import { type Request, type Response } from 'express';
 import { type Model, type Document, type Types } from 'mongoose';
 
-import { HTTP_STATUS, type ILoginRequest, type IUpdatePasswordRequest, type StakeholderType, type IJWTPayload, type DeviceType } from '@sakalsense/core';
+import { HTTP_STATUS, type ILoginRequest, type IUpdatePasswordRequest, type StakeholderType, type IJWTPayload, type DeviceType } from 'sakalsense-core';
 
 import { type IAuthenticatedRequest } from '../../interfaces';
 import { hashPassword, verifyPassword, generateJWT, setAuthCookie, clearAuthCookie } from '../../services';

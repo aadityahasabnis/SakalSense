@@ -4,7 +4,7 @@
 
 import { type Request, type Response, type NextFunction, type RequestHandler } from 'express';
 
-import { DEBUG_LOG_EXCLUDED_PATHS, AUTH_COOKIE, formatDate, type IJWTPayload, type IDebugLogEntry } from '@sakalsense/core';
+import { DEBUG_LOG_EXCLUDED_PATHS, AUTH_COOKIE, formatDate, type IJWTPayload, type IDebugLogEntry } from 'sakalsense-core';
 
 import { verifyJWT } from '../services/auth.service';
 import { createDebugLog } from '../services/debugLog.service';

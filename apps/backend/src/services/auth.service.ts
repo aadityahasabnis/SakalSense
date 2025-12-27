@@ -7,7 +7,7 @@ import jwt from 'jsonwebtoken';
 
 import { type Response } from 'express';
 
-import { AUTH_COOKIE, COOKIE_CONFIG, SESSION_TTL, type IJWTPayload, type StakeholderType } from '@sakalsense/core';
+import { AUTH_COOKIE, COOKIE_CONFIG, SESSION_TTL, type IJWTPayload, type StakeholderType } from 'sakalsense-core';
 
 import { JWT_SECRET } from '../config';
 

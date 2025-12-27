@@ -4,7 +4,7 @@
 
 import { Router, type Router as IRouter } from 'express';
 
-import { ROUTE } from '@sakalsense/core';
+import { ROUTE } from 'sakalsense-core';
 
 import { asyncHandler } from '../../middlewares';
 import { authenticateAdmin } from '../../middlewares/auth.middleware';

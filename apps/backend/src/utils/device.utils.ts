@@ -2,7 +2,7 @@
 // Device Detection Utilities
 // =============================================
 
-import { DEVICE, type DeviceType } from '@sakalsense/core';
+import { DEVICE, type DeviceType } from 'sakalsense-core';
 
 export const detectDevice = (userAgent: string): DeviceType => {
     const ua = userAgent.toLowerCase();

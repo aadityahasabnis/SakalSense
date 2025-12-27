@@ -5,7 +5,7 @@ import { type FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { type ILoginResponse, type ISession, type StakeholderType } from '@sakalsense/core';
+import { type ILoginResponse, type ISession, type StakeholderType } from 'sakalsense-core';
 
 import { SessionLimitDialog } from './SessionLimitDialog';
 

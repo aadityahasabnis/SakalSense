@@ -3,7 +3,7 @@
 // Handles login, registration, logout, session management for USER
 // =============================================
 
-import { STAKEHOLDER, type IUserRegisterRequest } from '@sakalsense/core';
+import { STAKEHOLDER, type IUserRegisterRequest } from 'sakalsense-core';
 
 import { UserModel, type IUserDocument } from '../../models';
 import { createAuthController } from './base.auth.controller';

@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { ADMINISTRATOR_API_ROUTES, type ILoginResponse, type ISession } from '@sakalsense/core';
+import { ADMINISTRATOR_API_ROUTES, type ILoginResponse, type ISession } from 'sakalsense-core';
 
 import { SessionLimitDialog } from '@/components/auth/SessionLimitDialog';
 import { http } from '@/lib/http';

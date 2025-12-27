@@ -4,7 +4,7 @@
 
 import { Router, type Router as IRouter } from 'express';
 
-import { ROUTE } from '@sakalsense/core';
+import { ROUTE } from 'sakalsense-core';
 
 import { healthRouter } from './health';
 import { authRouter } from './auth';

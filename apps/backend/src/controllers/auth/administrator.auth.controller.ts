@@ -3,7 +3,7 @@
 // Handles login, logout, session management (no registration - seeded accounts)
 // =============================================
 
-import { STAKEHOLDER } from '@sakalsense/core';
+import { STAKEHOLDER } from 'sakalsense-core';
 
 import { AdministratorModel, type IAdministratorDocument } from '../../models';
 import { createAuthController } from './base.auth.controller';

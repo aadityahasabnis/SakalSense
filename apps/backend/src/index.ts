@@ -13,7 +13,7 @@ import helmet from 'helmet';
 import compression from 'compression';
 import { type Server } from 'node:http';
 
-import { ROUTE } from '@sakalsense/core';
+import { ROUTE } from 'sakalsense-core';
 
 import { PORT, NODE_ENV, validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
 import { connectMongoDB, connectRedis, disconnectMongoDB, disconnectRedis } from './db';

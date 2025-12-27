@@ -5,7 +5,7 @@
 import { type Request, type Response, type NextFunction, type RequestHandler } from 'express';
 import cookieParser from 'cookie-parser';
 
-import { AUTH_COOKIE, HTTP_STATUS, STAKEHOLDER, type IJWTPayload, type StakeholderType } from '@sakalsense/core';
+import { AUTH_COOKIE, HTTP_STATUS, STAKEHOLDER, type IJWTPayload, type StakeholderType } from 'sakalsense-core';
 
 import { verifyJWT } from '../services';
 import { validateSession, updateSessionActivity } from '../services/session.service';

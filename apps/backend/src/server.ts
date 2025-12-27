@@ -6,7 +6,7 @@ import express, { type Express } from 'express';
 import helmet from 'helmet';
 import compression from 'compression';
 
-import { ROUTE } from '@sakalsense/core';
+import { ROUTE } from 'sakalsense-core';
 import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
 import { connectMongoDB, connectRedis } from './db';
 import { apiRouter } from './routes';
