@@ -1,6 +1,6 @@
 {
     "name": "@sakalsense/backend",
-    "version": "0.0.37",
+    "version": "0.0.38",
     "description": "Express backend for SakalSense",
     "private": true,
     "type": "module",
@@ -39,5 +39,5 @@
     "keywords": [],
     "author": "Aaditya Hasabnis",
     "license": "ISC",
-    "packageManager": "pnpm@10.20.0"
+    "packageManager": "pnpm@10.26.2"
 }
