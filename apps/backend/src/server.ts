@@ -3,7 +3,7 @@
 // =============================================
 
 import express, { type Express } from 'express';
-import helmet from 'helmet';
+import * as helmetModule from 'helmet';
 import compression from 'compression';
 import serverless from 'serverless-http';
 
@@ -11,6 +11,8 @@ import { ROUTE } from 'sakalsense-core';
 import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config';
 import { apiRouter } from './routes';
 import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares';
+
+const helmet = helmetModule.default;
 
 const createExpressApp = (): Express => {
     validateEnv();
