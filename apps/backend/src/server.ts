@@ -2,7 +2,7 @@
 // Vercel Serverless Entry Point (Clean Version)
 // =============================================
 
-import express, { type Express } from 'express';
+import express, { type Express, type Request, type Response } from 'express';
 import { createRequire } from 'module';
 import compression from 'compression';
 
@@ -55,8 +55,16 @@ const createExpressApp = (): Express => {
 
 const app = createExpressApp();
 
-// Vercel serverless handler
-export default app;
-
-// CommonJS export for Vercel (tsup will handle this)
-export { app };
+// Vercel serverless handler - must be a function that handles req/res
+export default async function handler(req: Request, res: Response): Promise<void> {
+    try {
+        await connectDatabases();
+        app(req, res);
+    } catch (error) {
+        console.error('Serverless function error:', error);
+        res.status(500).json({
+            error: 'Internal server error',
+            message: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+}
