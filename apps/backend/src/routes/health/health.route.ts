@@ -4,7 +4,7 @@
 
 import { Router, type Router as IRouter } from 'express';
 
-import { getHealth } from './health.controller';
+import { getHealth } from './health.controller.js';
 
 export const healthRouter: IRouter = Router();
 
