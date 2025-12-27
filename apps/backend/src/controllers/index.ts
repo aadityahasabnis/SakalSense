@@ -2,4 +2,4 @@
 // Controllers Barrel Export
 // =============================================
 
-export * from './auth';
+export * from './auth/index.js';

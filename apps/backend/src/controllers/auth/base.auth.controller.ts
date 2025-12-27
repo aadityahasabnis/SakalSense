@@ -8,10 +8,10 @@ import { type Model, type Document, type Types } from 'mongoose';
 
 import { HTTP_STATUS, type ILoginRequest, type IUpdatePasswordRequest, type StakeholderType, type IJWTPayload, type DeviceType } from 'sakalsense-core';
 
-import { type IAuthenticatedRequest } from '../../interfaces';
-import { hashPassword, verifyPassword, generateJWT, setAuthCookie, clearAuthCookie } from '../../services';
-import { createSession, getActiveSessions, invalidateSession } from '../../services/session.service';
-import { detectDevice, getClientIP, getLocationFromIP, resolveClientIP } from '../../utils';
+import { type IAuthenticatedRequest } from '../../interfaces/index.js';
+import { hashPassword, verifyPassword, generateJWT, setAuthCookie, clearAuthCookie } from '../../services/index.js';
+import { createSession, getActiveSessions, invalidateSession } from '../../services/session.service.js';
+import { detectDevice, getClientIP, getLocationFromIP, resolveClientIP } from '../../utils/index.js';
 
 // Base document interface for all stakeholder models
 interface IBaseStakeholderDocument extends Document {

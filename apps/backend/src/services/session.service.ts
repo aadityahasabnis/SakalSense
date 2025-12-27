@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto';
 
 import { SESSION_LIMIT, SESSION_TTL, type ISession, type StakeholderType, type DeviceType } from 'sakalsense-core';
 
-import { getRedis } from '../db';
+import { getRedis } from '../db/index.js';
 
 // Redis key builders
 const sessionKey = (role: StakeholderType, userId: string, sessionId: string): string => `session:${role}:${userId}:${sessionId}`;

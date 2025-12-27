@@ -6,8 +6,8 @@ import { type Request, type Response, type NextFunction, type RequestHandler } f
 
 import { DEBUG_LOG_EXCLUDED_PATHS, AUTH_COOKIE, formatDate, type IJWTPayload, type IDebugLogEntry } from 'sakalsense-core';
 
-import { verifyJWT } from '../services/auth.service';
-import { createDebugLog } from '../services/debugLog.service';
+import { verifyJWT } from '../services/auth.service.js';
+import { createDebugLog } from '../services/debugLog.service.js';
 
 // Sanitize request body - redact sensitive fields
 const sanitizeBody = (body: unknown): unknown => {

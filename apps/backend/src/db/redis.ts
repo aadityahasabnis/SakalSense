@@ -4,7 +4,7 @@
 
 import { createClient, type RedisClientType } from 'redis';
 
-import { REDIS_HOST, REDIS_PORT, REDIS_USERNAME, REDIS_PASSWORD } from '../config';
+import { REDIS_HOST, REDIS_PORT, REDIS_USERNAME, REDIS_PASSWORD } from '../config/index.js';
 
 // redis: Singleton Redis client instance, initialized lazily
 let redis: RedisClientType | null = null;

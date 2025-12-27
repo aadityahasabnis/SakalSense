@@ -5,8 +5,8 @@
 
 import { STAKEHOLDER, type IUserRegisterRequest } from 'sakalsense-core';
 
-import { UserModel, type IUserDocument } from '../../models';
-import { createAuthController } from './base.auth.controller';
+import { UserModel, type IUserDocument } from '../../models/index.js';
+import { createAuthController } from './base.auth.controller.js';
 
 const controller = createAuthController<IUserDocument>({
     role: STAKEHOLDER.USER,

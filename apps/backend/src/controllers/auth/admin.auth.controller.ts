@@ -5,8 +5,8 @@
 
 import { STAKEHOLDER, type IAdminRegisterRequest } from 'sakalsense-core';
 
-import { AdminModel, type IAdminDocument } from '../../models';
-import { createAuthController } from './base.auth.controller';
+import { AdminModel, type IAdminDocument } from '../../models/index.js';
+import { createAuthController } from './base.auth.controller.js';
 
 // TODO: Store invite codes in database with expiry in production
 const VALID_INVITE_CODES = new Set(['ADMIN-INVITE-2024']);

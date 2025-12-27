@@ -5,8 +5,8 @@
 
 import { STAKEHOLDER } from 'sakalsense-core';
 
-import { AdministratorModel, type IAdministratorDocument } from '../../models';
-import { createAuthController } from './base.auth.controller';
+import { AdministratorModel, type IAdministratorDocument } from '../../models/index.js';
+import { createAuthController } from './base.auth.controller.js';
 
 const controller = createAuthController<IAdministratorDocument>({
     role: STAKEHOLDER.ADMINISTRATOR,

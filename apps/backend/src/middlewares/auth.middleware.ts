@@ -7,8 +7,8 @@ import cookieParser from 'cookie-parser';
 
 import { AUTH_COOKIE, HTTP_STATUS, STAKEHOLDER, type IJWTPayload, type StakeholderType } from 'sakalsense-core';
 
-import { verifyJWT } from '../services';
-import { validateSession, updateSessionActivity } from '../services/session.service';
+import { verifyJWT } from '../services/index.js';
+import { validateSession, updateSessionActivity } from '../services/session.service.js';
 
 // Cookie parser middleware (use once in app)
 export const parseCookies: RequestHandler = cookieParser();

@@ -2,5 +2,5 @@
 // Utils Barrel Export
 // =============================================
 
-export * from './device.utils';
-export * from './geolocation.utils';
+export * from './device.utils.js';
+export * from './geolocation.utils.js';

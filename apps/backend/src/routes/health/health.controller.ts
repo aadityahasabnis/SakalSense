@@ -6,8 +6,8 @@ import { type Request, type Response } from 'express';
 
 import { formatDate, formatDuration, HTTP_STATUS, type IHealthResponse } from 'sakalsense-core';
 
-import { isMongoDBConnected } from '../../db/mongodb';
-import { isRedisConnected } from '../../db/redis';
+import { isMongoDBConnected } from '../../db/mongodb.js';
+import { isRedisConnected } from '../../db/redis.js';
 
 export const getHealth = (_req: Request, res: Response<IHealthResponse>): void => {
     res.status(HTTP_STATUS.OK).json({

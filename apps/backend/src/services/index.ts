@@ -2,6 +2,6 @@
 // Services Barrel Export
 // =============================================
 
-export * from './auth.service';
-export * from './session.service';
-export * from './debugLog.service';
+export * from './auth.service.js';
+export * from './session.service.js';
+export * from './debugLog.service.js';
