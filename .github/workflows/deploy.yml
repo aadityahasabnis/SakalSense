@@ -96,21 +96,10 @@ jobs:
               if: github.ref == 'refs/heads/main' && steps.version-backend.outputs.deploy == 'true'
               run: pnpm --filter @sakalsense/backend build
 
-            - name: Prepare Backend for Vercel
-              if: github.ref == 'refs/heads/main' && steps.version-backend.outputs.deploy == 'true'
-              run: |
-                  cd apps/backend
-                  # Remove workspace dependency from package.json (already bundled by tsup)
-                  jq 'del(.dependencies["@sakalsense/core"])' package.json > package.tmp.json
-                  mv package.tmp.json package.json
-
             - name: Deploy Backend
               if: github.ref == 'refs/heads/main' && steps.version-backend.outputs.deploy == 'true'
               env:
                   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
                   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
                   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-              run: |
-                  vercel pull --yes --environment=production --token=$VERCEL_TOKEN
-                  vercel build --prod --token=$VERCEL_TOKEN
-                  vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+              run: vercel deploy --prod --token=$VERCEL_TOKEN
