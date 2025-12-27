@@ -55,7 +55,7 @@ export const getActiveSessions = async (userId: string, role: StakeholderType): 
     const sessions = await Promise.all(
         keys.map(async (key) => {
             const data = await redis.get(key);
-            return data ? (JSON.parse(data) as ISession) : null;
+            return data && typeof data === 'string' ? (JSON.parse(data) as ISession) : null;
         }),
     );
 
