@@ -1,18 +1,18 @@
 {
     "name": "@sakalsense/backend",
-    "version": "0.0.65",
+    "version": "0.0.66",
     "description": "Express backend for SakalSense",
     "private": true,
     "type": "module",
-    "main": "dist/dev.js",
+    "main": "api/index.js",
     "scripts": {
-        "dev": "tsx watch --env-file=.env.local src/dev.ts",
+        "dev": "tsx watch --env-file=.env.local src/index.ts",
         "build": "tsup",
-        "start": "node dist/dev.js",
+        "start": "node api/index.js",
         "type-check": "tsc -p tsconfig.json --noEmit",
         "lint": "eslint src --ext .ts",
         "format": "prettier --check src",
-        "clean": "rm -rf dist .eslintcache"
+        "clean": "rm -rf api .eslintcache"
     },
     "dependencies": {
         "argon2": "^0.44.0",
@@ -25,7 +25,6 @@
         "mongoose": "^9.0.2",
         "redis": "^5.10.0",
         "sakalsense-core": "^1.0.2",
-        "serverless-http": "^4.0.0",
         "zod": "^4.2.1"
     },
     "devDependencies": {
