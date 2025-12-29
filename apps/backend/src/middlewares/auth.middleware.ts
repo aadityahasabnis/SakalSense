@@ -5,10 +5,12 @@
 import { type Request, type Response, type NextFunction, type RequestHandler } from 'express';
 import cookieParser from 'cookie-parser';
 
-import { AUTH_COOKIE, HTTP_STATUS, STAKEHOLDER, type IJWTPayload, type StakeholderType } from 'sakalsense-core';
-
 import { verifyJWT } from '../services/index.js';
 import { validateSession, updateSessionActivity } from '../services/session.service.js';
+import { HTTP_STATUS } from '@/constants/http.constants.js';
+import { type StakeholderType } from '@/lib/interfaces/auth.types.js';
+import { AUTH_COOKIE, STAKEHOLDER } from '@/constants/auth.constants.js';
+import { type IJWTPayload } from '@/lib/interfaces/auth.interfaces.js';
 
 // Cookie parser middleware (use once in app)
 export const parseCookies: RequestHandler = cookieParser();

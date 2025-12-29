@@ -5,9 +5,8 @@ import { type FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { type ILoginResponse } from 'sakalsense-core';
-
 import { http } from '@/lib/http';
+import { type ILoginResponse } from '@/lib/interfaces';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types

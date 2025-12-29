@@ -4,10 +4,11 @@
 
 'use client';
 
-import { type FormDataType, type IApiResponse } from 'sakalsense-core';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { apiCall } from '@/lib/api';
+import { type IApiResponse } from '@/lib/interfaces';
+import { type FormDataType } from '@/types/common.types';
 
 // =============================================
 // Configuration

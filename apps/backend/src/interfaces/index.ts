@@ -2,4 +2,4 @@
 // Interfaces Barrel Export
 // =============================================
 
-export * from './express.interfaces.js';
+export * from '../lib/interfaces/express.interfaces.js';

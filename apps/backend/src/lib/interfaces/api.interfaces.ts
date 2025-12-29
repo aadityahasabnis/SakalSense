@@ -3,7 +3,7 @@
 // =============================================
 
 import { type ISession } from './auth.interfaces';
-import { type FormDataType } from '../types';
+import { type FormDataType } from './common.types';
 
 // HTTP method type
 export type HttpMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';

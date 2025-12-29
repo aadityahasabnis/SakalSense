@@ -7,9 +7,10 @@
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
-import { API_CONFIG, type FormDataType, type HttpMethodType, type IApiResponse } from 'sakalsense-core';
+import { type HttpMethodType, type IApiResponse } from './interfaces';
 
 import { API_URL, IS_DEVELOPMENT } from '@/env';
+import { type FormDataType } from '@/types/common.types';
 
 // =============================================
 // Types & Interfaces

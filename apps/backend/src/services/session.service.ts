@@ -4,9 +4,11 @@
 
 import { randomUUID } from 'crypto';
 
-import { SESSION_LIMIT, SESSION_TTL, type ISession, type StakeholderType, type DeviceType } from 'sakalsense-core';
+import { type StakeholderType, type DeviceType } from '@/lib/interfaces/auth.types.js';
 
 import { getRedis } from '../db/index.js';
+import { type ISession } from '@/lib/interfaces/auth.interfaces.js';
+import { SESSION_LIMIT, SESSION_TTL } from '@/constants/auth.constants.js';
 
 // Redis key builders
 const sessionKey = (role: StakeholderType, userId: string, sessionId: string): string => `session:${role}:${userId}:${sessionId}`;

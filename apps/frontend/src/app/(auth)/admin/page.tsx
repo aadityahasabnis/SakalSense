@@ -1,5 +1,4 @@
-import { STAKEHOLDER, STAKEHOLDER_LABELS } from 'sakalsense-core';
-
+import { STAKEHOLDER, STAKEHOLDER_LABELS } from '@/constants/auth.constants';
 import { getCookieInfo, getCurrentUser } from '@/lib/auth';
 
 const AdminDashboardPage = async () => {

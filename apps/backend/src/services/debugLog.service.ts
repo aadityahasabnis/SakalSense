@@ -2,9 +2,11 @@
 // Debug Log Service - Redis-based API request/response logging
 // =============================================
 
-import { DEBUG_LOG_TTL, DEBUG_LOG_KEY_PREFIX, formatDate, type IDebugLogEntry } from 'sakalsense-core';
+import { type IDebugLogEntry } from '@/lib/interfaces/debugLog.interfaces.js';
 
 import { getRedis } from '../db/index.js';
+import { formatDate } from '@/utils/date.utils.js';
+import { DEBUG_LOG_KEY_PREFIX, DEBUG_LOG_TTL } from '@/constants/http.constants.js';
 
 // Generate time-sortable ID (timestamp + random suffix)
 const generateId = (): string => {

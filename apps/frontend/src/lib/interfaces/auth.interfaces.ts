@@ -2,7 +2,7 @@
 // Auth Interfaces - JWT, Session, and API structures
 // =============================================
 
-import { type StakeholderType, type DeviceType } from '../types/auth.types';
+import { type DeviceType, type StakeholderType } from '@/types/auth.types';
 
 // JWT payload embedded in token
 export interface IJWTPayload {

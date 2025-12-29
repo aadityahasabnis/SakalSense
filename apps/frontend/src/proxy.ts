@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { AUTH_COOKIE, type STAKEHOLDER } from 'sakalsense-core';
+import { AUTH_COOKIE, type STAKEHOLDER } from './constants/auth.constants';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public Routes - No authentication required

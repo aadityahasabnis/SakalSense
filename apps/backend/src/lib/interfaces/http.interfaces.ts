@@ -2,7 +2,7 @@
 // HTTP Interfaces - Response structures with strict typing
 // =============================================
 
-import { type HealthStatusType, type FormDataType } from '../types';
+import { type HealthStatusType, type FormDataType } from './common.types';
 
 // IActionSuccessResponse: Used when API call succeeds
 interface IActionSuccessResponse<TData extends FormDataType | Array<FormDataType> | undefined = undefined> {

@@ -1,6 +1,5 @@
-import { ADMIN_API_ROUTES } from 'sakalsense-core';
-
 import { CommonRegisterForm } from '@/components/auth/CommonRegisterForm';
+import { ADMIN_API_ROUTES } from '@/constants/routes/admin.routes';
 
 const AdminRegisterPage = () => (
     <CommonRegisterForm

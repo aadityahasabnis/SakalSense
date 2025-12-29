@@ -3,10 +3,10 @@
 // Handles login, registration, logout, session management for USER
 // =============================================
 
-import { STAKEHOLDER, type IUserRegisterRequest } from 'sakalsense-core';
-
+import { type IUserRegisterRequest } from '@/lib/interfaces/auth.interfaces.js';
 import { UserModel, type IUserDocument } from '../../models/index.js';
 import { createAuthController } from './base.auth.controller.js';
+import { STAKEHOLDER } from '@/constants/auth.constants.js';
 
 const controller = createAuthController<IUserDocument>({
     role: STAKEHOLDER.USER,

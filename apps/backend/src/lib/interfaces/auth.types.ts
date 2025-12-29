@@ -2,7 +2,7 @@
 // Auth Types - Derived from constants for type safety
 // =============================================
 
-import type { STAKEHOLDER, DEVICE, AUTH_COOKIE } from '../constants/auth.constants';
+import { type AUTH_COOKIE, type DEVICE, type STAKEHOLDER } from '@/constants/auth.constants';
 
 export type StakeholderType = (typeof STAKEHOLDER)[keyof typeof STAKEHOLDER];
 export type DeviceType = (typeof DEVICE)[keyof typeof DEVICE];

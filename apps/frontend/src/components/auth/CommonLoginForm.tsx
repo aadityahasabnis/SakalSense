@@ -5,11 +5,11 @@ import { type FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { type ILoginResponse, type ISession, type StakeholderType } from 'sakalsense-core';
-
 import { SessionLimitDialog } from './SessionLimitDialog';
 
 import { http } from '@/lib/http';
+import { type ILoginResponse, type ISession } from '@/lib/interfaces';
+import { type StakeholderType } from '@/types/auth.types';
 
 // =============================================
 // Types

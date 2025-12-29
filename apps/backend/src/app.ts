@@ -13,11 +13,10 @@ import compression from 'compression';
 const require = createRequire(import.meta.url);
 const helmet = require('helmet');
 
-import { ROUTE } from 'sakalsense-core';
-
 import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config/index.js';
 import { apiRouter } from './routes/index.js';
 import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares/index.js';
+import { ROUTE } from './constants/routes/routes.constants.js';
 
 // =============================================
 // Express Application Factory

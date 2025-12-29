@@ -2,7 +2,7 @@
 // Debug Log Interfaces - API request/response logging
 // =============================================
 
-import { type StakeholderType } from '../types';
+import { type StakeholderType } from '@/types/auth.types';
 
 // Status category for precise error classification
 export type DebugLogStatusCategory = 'SUCCESS' | 'BAD_REQUEST' | 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'VALIDATION_ERROR' | 'SERVER_ERROR';

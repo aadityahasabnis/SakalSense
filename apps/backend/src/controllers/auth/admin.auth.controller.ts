@@ -3,10 +3,10 @@
 // Handles login, invite-only registration, logout for ADMIN
 // =============================================
 
-import { STAKEHOLDER, type IAdminRegisterRequest } from 'sakalsense-core';
-
+import { STAKEHOLDER } from '@/constants/auth.constants.js';
 import { AdminModel, type IAdminDocument } from '../../models/index.js';
 import { createAuthController } from './base.auth.controller.js';
+import { type IAdminRegisterRequest } from '@/lib/interfaces/auth.interfaces.js';
 
 // TODO: Store invite codes in database with expiry in production
 const VALID_INVITE_CODES = new Set(['ADMIN-INVITE-2024']);

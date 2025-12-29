@@ -13,7 +13,7 @@ import { type Server } from 'node:http';
 import { PORT, NODE_ENV } from './config/index.js';
 import { connectMongoDB, connectRedis, disconnectMongoDB, disconnectRedis } from './db/index.js';
 import { createExpressApp } from './app.js';
-import { ROUTE } from 'sakalsense-core';
+import { ROUTE } from './constants/routes/routes.constants.js';
 
 // =============================================
 // Constants

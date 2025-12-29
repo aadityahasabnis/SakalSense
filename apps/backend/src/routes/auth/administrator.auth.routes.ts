@@ -4,11 +4,10 @@
 
 import { Router, type Router as IRouter } from 'express';
 
-import { ROUTE } from 'sakalsense-core';
-
 import { asyncHandler } from '../../middlewares/index.js';
 import { authenticateAdministrator } from '../../middlewares/auth.middleware.js';
 import { administratorAuthController } from '../../controllers/index.js';
+import { ROUTE } from '@/constants/routes/routes.constants.js';
 
 const router: IRouter = Router();
 

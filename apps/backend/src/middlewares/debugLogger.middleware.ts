@@ -4,10 +4,13 @@
 
 import { type Request, type Response, type NextFunction, type RequestHandler } from 'express';
 
-import { DEBUG_LOG_EXCLUDED_PATHS, AUTH_COOKIE, formatDate, type IJWTPayload, type IDebugLogEntry } from 'sakalsense-core';
-
 import { verifyJWT } from '../services/auth.service.js';
 import { createDebugLog } from '../services/debugLog.service.js';
+import { type IDebugLogEntry } from '@/lib/interfaces/debugLog.interfaces.js';
+import { AUTH_COOKIE } from '@/constants/auth.constants.js';
+import { type IJWTPayload } from '@/lib/interfaces/auth.interfaces.js';
+import { DEBUG_LOG_EXCLUDED_PATHS } from '@/constants/http.constants.js';
+import { formatDate } from '@/utils/date.utils.js';
 
 // Sanitize request body - redact sensitive fields
 const sanitizeBody = (body: unknown): unknown => {

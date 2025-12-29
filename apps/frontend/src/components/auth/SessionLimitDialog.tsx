@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 
-import { ADMIN_API_ROUTES, ADMINISTRATOR_API_ROUTES, type ISession, type StakeholderType, USER_API_ROUTES } from 'sakalsense-core';
-
 import { getDeviceIcon } from '@/constants/icons';
+import { ADMIN_API_ROUTES } from '@/constants/routes/admin.routes';
+import { ADMINISTRATOR_API_ROUTES } from '@/constants/routes/administrator.routes';
+import { USER_API_ROUTES } from '@/constants/routes/user.routes';
 import { http } from '@/lib/http';
+import { type ISession } from '@/lib/interfaces';
+import { type StakeholderType } from '@/types/auth.types';
 
 // =============================================
 // Session Limit Dialog - Displayed when user exceeds session limit

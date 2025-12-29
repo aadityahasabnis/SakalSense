@@ -1,6 +1,5 @@
-import { USER_API_ROUTES } from 'sakalsense-core';
-
 import { CommonLoginForm } from '@/components/auth/CommonLoginForm';
+import { USER_API_ROUTES } from '@/constants/routes/user.routes';
 
 const UserLoginPage = () => (
     <CommonLoginForm role='USER' apiEndpoint={USER_API_ROUTES.auth.login} redirectPath='/' registerPath='/register' title='Welcome Back' subtitle='Sign in to continue to SakalSense' />

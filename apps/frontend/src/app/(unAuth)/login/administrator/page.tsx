@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { ADMINISTRATOR_API_ROUTES, type ILoginResponse, type ISession } from 'sakalsense-core';
-
 import { SessionLimitDialog } from '@/components/auth/SessionLimitDialog';
+import { ADMINISTRATOR_API_ROUTES } from '@/constants/routes/administrator.routes';
 import { http } from '@/lib/http';
+import { type ILoginResponse, type ISession } from '@/lib/interfaces';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component

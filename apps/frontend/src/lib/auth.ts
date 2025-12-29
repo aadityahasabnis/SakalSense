@@ -6,14 +6,18 @@
 
 import { cookies } from 'next/headers';
 
-import { AUTH_COOKIE, type IJWTPayload, type StakeholderType } from 'sakalsense-core';
+import { type IJWTPayload } from './interfaces';
+
+import { AUTH_COOKIE, type STAKEHOLDER } from '@/constants/auth.constants';
+
+type StakeholderKey = keyof typeof STAKEHOLDER;
 
 // =============================================
 // Types
 // =============================================
 
 export interface ICurrentUser extends IJWTPayload {
-    stakeholder: StakeholderType;
+    stakeholder: StakeholderKey;
 }
 
 // =============================================
@@ -43,7 +47,7 @@ const decodeJWT = (token: string): IJWTPayload | null => {
 // Get Current User
 // =============================================
 
-export const getCurrentUser = async (stakeholder: StakeholderType): Promise<ICurrentUser | null> => {
+export const getCurrentUser = async (stakeholder: StakeholderKey): Promise<ICurrentUser | null> => {
     const cookieStore = await cookies();
     const token = cookieStore.get(AUTH_COOKIE[stakeholder])?.value;
 
@@ -59,7 +63,7 @@ export const getCurrentUser = async (stakeholder: StakeholderType): Promise<ICur
 // Get Cookie Info
 // =============================================
 
-export const getCookieInfo = async (stakeholder: StakeholderType): Promise<{ name: string; value: string | null; decoded: IJWTPayload | null }> => {
+export const getCookieInfo = async (stakeholder: StakeholderKey): Promise<{ name: string; value: string | null; decoded: IJWTPayload | null }> => {
     const cookieStore = await cookies();
     const cookieName = AUTH_COOKIE[stakeholder];
     const token = cookieStore.get(cookieName)?.value ?? null;
