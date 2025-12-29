@@ -12,6 +12,11 @@ import { type HttpMethodType, type IApiResponse } from './interfaces';
 import { API_URL, IS_DEVELOPMENT } from '@/env';
 import { type FormDataType } from '@/types/common.types';
 
+// API Configuration
+const API_CONFIG = {
+    timeout: 30000, // 30 seconds
+} as const;
+
 // =============================================
 // Types & Interfaces
 // =============================================
