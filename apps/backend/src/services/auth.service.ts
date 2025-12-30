@@ -10,7 +10,7 @@ import { type Response } from 'express';
 import { JWT_SECRET } from '../config/index.js';
 import { type IJWTPayload } from '@/lib/interfaces/auth.interfaces.js';
 import { AUTH_COOKIE, COOKIE_CONFIG, SESSION_TTL } from '@/constants/auth.constants.js';
-import { type StakeholderType } from '@/lib/interfaces/auth.types.js';
+import { type StakeholderType } from '@/constants/auth.constants.js';
 
 // Password hashing using Argon2id
 export const hashPassword = async (password: string): Promise<string> => argon2.hash(password, { type: argon2.argon2id });

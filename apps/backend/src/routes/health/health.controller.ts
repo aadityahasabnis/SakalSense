@@ -2,13 +2,12 @@
 // Health Controller - Returns system health status
 // =============================================
 
+import { HTTP_STATUS } from '@/constants/http.constants';
+import { isMongoDBConnected, isRedisConnected } from '@/db';
+import { type IHealthResponse } from '@/lib/interfaces/http.interfaces';
+import { formatDate, formatDuration } from '@/utils/date.utils';
 import { type Request, type Response } from 'express';
 
-import { isMongoDBConnected } from '../../db/mongodb.js';
-import { isRedisConnected } from '../../db/redis.js';
-import { HTTP_STATUS } from '@/constants/http.constants.js';
-import { formatDate, formatDuration } from '@/utils/date.utils.js';
-import { type IHealthResponse } from '@/lib/interfaces/http.interfaces.js';
 
 export const getHealth = (_req: Request, res: Response<IHealthResponse>): void => {
     res.status(HTTP_STATUS.OK).json({

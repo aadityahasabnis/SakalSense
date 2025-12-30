@@ -9,10 +9,12 @@ import { type Model, type Document, type Types } from 'mongoose';
 import { type IAuthenticatedRequest } from '../../interfaces/index.js';
 import { hashPassword, verifyPassword, generateJWT, setAuthCookie, clearAuthCookie } from '../../services/index.js';
 import { createSession, getActiveSessions, invalidateSession } from '../../services/session.service.js';
-import { detectDevice, getClientIP, getLocationFromIP, resolveClientIP } from '../../utils/index.js';
-import { type DeviceType, type StakeholderType } from '@/lib/interfaces/auth.types.js';
+import { type DeviceType } from '@/constants/auth.constants.js';
+import { type StakeholderType } from '@/constants/auth.constants.js';
 import { type IUpdatePasswordRequest, type IJWTPayload, type ILoginRequest } from '@/lib/interfaces/auth.interfaces.js';
 import { HTTP_STATUS } from '@/constants/http.constants.js';
+import { detectDevice, getClientIP } from '@/utils/device.utils.js';
+import { getLocationFromIP, resolveClientIP } from '@/utils/geolocation.utils.js';
 
 // Base document interface for all stakeholder models
 interface IBaseStakeholderDocument extends Document {
@@ -61,7 +63,7 @@ const buildUserResponse = (userId: string, fullName: string, email: string, avat
 });
 
 // Auth controller return type
-interface IAuthController {
+export interface IAuthController {
     login: (req: Request, res: Response) => Promise<void>;
     register: ((req: Request, res: Response) => Promise<void>) | undefined;
     logout: (req: Request, res: Response) => Promise<void>;
@@ -97,8 +99,10 @@ export const createAuthController = <T extends IBaseStakeholderDocument>(config:
             res.status(HTTP_STATUS.CONFLICT).json({
                 success: false,
                 error: 'Session limit exceeded',
-                sessionLimitExceeded: true,
-                activeSessions,
+                data: {
+                    sessionLimitExceeded: true,
+                    activeSessions,
+                },
             });
             return;
         }

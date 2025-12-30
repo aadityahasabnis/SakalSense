@@ -35,7 +35,7 @@ export interface ILoginRequest {
 
 // Login response with optional session conflict data
 export interface ILoginResponse {
-    user: { id: string; fullName: string; email: string; avatarLink: string | null };
+    user?: { id: string; fullName: string; email: string; avatarLink: string | null };
     sessionLimitExceeded?: boolean;
     activeSessions?: Array<ISession>;
 }

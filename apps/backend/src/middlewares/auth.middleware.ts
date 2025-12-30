@@ -8,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import { verifyJWT } from '../services/index.js';
 import { validateSession, updateSessionActivity } from '../services/session.service.js';
 import { HTTP_STATUS } from '@/constants/http.constants.js';
-import { type StakeholderType } from '@/lib/interfaces/auth.types.js';
+import { type StakeholderType } from '@/constants/auth.constants.js';
 import { AUTH_COOKIE, STAKEHOLDER } from '@/constants/auth.constants.js';
 import { type IJWTPayload } from '@/lib/interfaces/auth.interfaces.js';
 

@@ -5,7 +5,7 @@ import { type FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { http } from '@/lib/http';
+import { clientApi } from '@/lib/http';
 import { type ILoginResponse } from '@/lib/interfaces';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ export const CommonRegisterForm = ({ apiEndpoint, redirectPath, loginPath, title
         if (form.mobile) body.mobile = form.mobile;
         if (requireInviteCode) body.inviteCode = form.inviteCode;
 
-        const response = await http.post<ILoginResponse>(apiEndpoint, body);
+        const response = await clientApi.post<ILoginResponse>(apiEndpoint, body);
 
         if (response.success) {
             router.push(redirectPath);

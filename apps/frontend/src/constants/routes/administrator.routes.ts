@@ -2,47 +2,31 @@
 // Administrator Routes - ADMINISTRATOR stakeholder endpoints
 // =============================================
 
-import { path, ROUTE, withId } from './routes.constants';
-
-// ─────────────────────────────────────────────
-// Base Paths
-// ─────────────────────────────────────────────
-
-const AUTH = path(ROUTE.AUTH, ROUTE.ADMINISTRATOR);
-const SESSIONS = path(AUTH, ROUTE.SESSIONS);
-const ADMINS = path(ROUTE.ADMINISTRATOR, ROUTE.ADMINS);
-const USERS = path(ROUTE.ADMINISTRATOR, ROUTE.USERS);
-const SYSTEM = path(ROUTE.ADMINISTRATOR, ROUTE.SYSTEM);
-
-// ─────────────────────────────────────────────
-// Administrator API Routes
-// ─────────────────────────────────────────────
-
 export const ADMINISTRATOR_API_ROUTES = {
     auth: {
-        login: path(AUTH, ROUTE.LOGIN),
-        logout: path(AUTH, ROUTE.LOGOUT),
-        sessions: SESSIONS,
-        terminateSession: withId(SESSIONS, ROUTE.TERMINATE),
-        updatePassword: path(AUTH, ROUTE.UPDATE_PASSWORD),
+        login: '/auth/administrator/login',
+        logout: '/auth/administrator/logout',
+        sessions: '/auth/administrator/sessions',
+        terminateSession: (id: string) => `/auth/administrator/sessions/terminate/${id}`,
+        updatePassword: '/auth/administrator/update-password',
     },
     admins: {
-        list: ADMINS,
-        get: withId(ADMINS),
-        invite: path(ADMINS, ROUTE.INVITE),
-        update: withId(ADMINS),
-        delete: withId(ADMINS),
-        activate: withId(ADMINS, ROUTE.ACTIVATE),
-        deactivate: withId(ADMINS, ROUTE.DEACTIVATE),
+        list: '/administrator/admins',
+        get: (id: string) => `/administrator/admins/${id}`,
+        invite: '/administrator/admins/invite',
+        update: (id: string) => `/administrator/admins/${id}`,
+        delete: (id: string) => `/administrator/admins/${id}`,
+        activate: (id: string) => `/administrator/admins/activate/${id}`,
+        deactivate: (id: string) => `/administrator/admins/deactivate/${id}`,
     },
     users: {
-        list: USERS,
-        get: withId(USERS),
-        delete: withId(USERS),
+        list: '/administrator/users',
+        get: (id: string) => `/administrator/users/${id}`,
+        delete: (id: string) => `/administrator/users/${id}`,
     },
     system: {
-        config: path(SYSTEM, ROUTE.CONFIG),
-        logs: path(SYSTEM, ROUTE.LOGS),
-        stats: path(SYSTEM, ROUTE.STATS),
+        config: '/administrator/system/config',
+        logs: '/administrator/system/logs',
+        stats: '/administrator/system/stats',
     },
 } as const;

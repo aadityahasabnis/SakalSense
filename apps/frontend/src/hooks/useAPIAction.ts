@@ -6,10 +6,11 @@
 
 import { startTransition, useState } from 'react';
 
-import { type FormDataType, type IApiResponse } from 'sakalsense-core';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { apiCall, type IApiCallProps } from '@/lib/api';
+import { type IApiResponse } from '@/lib/interfaces';
+import { type FormDataType } from '@/types/common.types';
 
 // =============================================
 // Types & Interfaces

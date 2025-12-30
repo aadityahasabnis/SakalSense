@@ -11,14 +11,10 @@ import { type HttpMethodType, type IApiResponse } from './interfaces';
 
 import { API_URL, IS_DEVELOPMENT } from '@/env';
 import { type FormDataType } from '@/types/common.types';
-
-// API Configuration
-const API_CONFIG = {
-    timeout: 30000, // 30 seconds
-} as const;
+import { createAbortController, formDataToJson, getErrorMessage, isAbortError, logApiCall } from '@/utils/api.utils';
 
 // =============================================
-// Types & Interfaces
+// Types
 // =============================================
 
 interface IApiRequest {
@@ -39,6 +35,10 @@ interface IApiRequestWithFormData extends IApiRequest {
 
 export type IApiCallProps = IApiRequest | IApiRequestWithBody | IApiRequestWithFormData;
 
+// =============================================
+// Error Classes
+// =============================================
+
 class RedirectError extends Error {
     constructor(public redirectTo: string) {
         super(`Redirecting to ${redirectTo}`);
@@ -47,44 +47,10 @@ class RedirectError extends Error {
 }
 
 // =============================================
-// Logging Utilities
-// =============================================
-
-interface ILogData {
-    method: string;
-    url: string;
-    status: number;
-    duration: number;
-    body?: unknown;
-    response?: unknown;
-    error?: string;
-    host?: string;
-}
-
-const logApiCall = async (logData: ILogData): Promise<void> => {
-    if (!IS_DEVELOPMENT) return;
-
-    const timestamp = new Date().toISOString();
-    console.log(`[API ${timestamp}] ${logData.method} ${logData.url} - ${logData.status} (${logData.duration}ms)`, logData.error ? `\nError: ${logData.error}` : '');
-};
-
-// =============================================
-// Helper Functions
-// =============================================
-
-const formDataToJson = (formData: FormData): FormDataType => {
-    const json: FormDataType = {};
-    formData.forEach((value, key) => {
-        json[key] = value;
-    });
-    return json;
-};
-
-// =============================================
 // Main API Call Function
 // =============================================
 
-export const apiCall = async <T = FormDataType>(props: IApiCallProps): Promise<IApiResponse<T>> => {
+export const apiCall = async <TData = FormDataType>(props: IApiCallProps): Promise<IApiResponse<TData>> => {
     const start = Date.now();
     const { method, url, authToken: customAuthToken } = props;
 
@@ -100,8 +66,7 @@ export const apiCall = async <T = FormDataType>(props: IApiCallProps): Promise<I
 
     try {
         // Setup request options
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
+        const { controller, timeoutId } = createAbortController();
 
         const requestOptions: RequestInit = {
             method,
@@ -120,11 +85,11 @@ export const apiCall = async <T = FormDataType>(props: IApiCallProps): Promise<I
         clearTimeout(timeoutId);
 
         // Parse response
-        const responseData = (await response.json()) as IApiResponse<T>;
+        const responseData = (await response.json()) as IApiResponse<TData>;
         const duration = Date.now() - start;
 
         // Log the API call
-        await logApiCall({
+        logApiCall({
             method,
             url: fullUrl,
             status: response.status,
@@ -172,10 +137,10 @@ export const apiCall = async <T = FormDataType>(props: IApiCallProps): Promise<I
         };
     } catch (error) {
         const duration = Date.now() - start;
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorMessage = getErrorMessage(error);
 
         // Log the error
-        await logApiCall({
+        logApiCall({
             method,
             url: fullUrl,
             status: 500,
@@ -191,7 +156,7 @@ export const apiCall = async <T = FormDataType>(props: IApiCallProps): Promise<I
         }
 
         // Handle abort errors
-        if (error instanceof Error && error.name === 'AbortError') {
+        if (isAbortError(error)) {
             return {
                 status: 408,
                 success: false,

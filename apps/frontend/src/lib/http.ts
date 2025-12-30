@@ -1,66 +1,136 @@
-/**
- * HTTP Client - Browser-side API client for direct fetch calls
- * @description Used for authentication endpoints where cookies must be set in the browser
- * @module lib/http
- */
+// =============================================
+// API Client - Client-side HTTP utility
+// =============================================
 
-import { type IApiResponse } from './interfaces';
+import { type HttpMethodType, type IApiResponse } from './interfaces';
 
 import { API_URL } from '@/env';
+import { createAbortController, getErrorMessage, isAbortError, logApiCall } from '@/utils/api.utils';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Configuration
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ─────────────────────────────────────────────────────────────────────────────
+// =============================================
 // Types
-// ─────────────────────────────────────────────────────────────────────────────
+// =============================================
 
-type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
-
-interface RequestOptions {
-    body?: Record<string, unknown>;
+interface IApiRequest {
+    method: HttpMethodType;
+    url: string;
     headers?: Record<string, string>;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HTTP Client
-// ─────────────────────────────────────────────────────────────────────────────
+interface IApiRequestWithBody extends IApiRequest {
+    method: 'POST' | 'PUT' | 'DELETE';
+    body: Record<string, unknown>;
+}
 
-const request = async <T>(method: HttpMethod, endpoint: string, options: RequestOptions = {}): Promise<IApiResponse<T>> => {
-    const { body, headers = {} } = options;
+export type IClientApiCallProps = IApiRequest | IApiRequestWithBody;
+
+// =============================================
+// Main API Call Function
+// =============================================
+
+export const clientApiCall = async <TData>(props: IClientApiCallProps): Promise<IApiResponse<TData>> => {
+    const start = Date.now();
+    const { method, url, headers: customHeaders = {} } = props;
+
+    const body = 'body' in props && props.body ? props.body : undefined;
+    const fullUrl = `${API_URL}${url}`;
 
     try {
-        const response = await fetch(`${API_URL}${endpoint}`, {
+        // Setup request with timeout
+        const { controller, timeoutId } = createAbortController();
+
+        const requestOptions: RequestInit = {
             method,
             headers: {
                 'Content-Type': 'application/json',
-                ...headers,
+                ...customHeaders,
             },
             credentials: 'include', // Critical: Enables cookie handling
             body: body ? JSON.stringify(body) : undefined,
-        });
+            signal: controller.signal,
+        };
 
-        const data = (await response.json()) as IApiResponse<T>;
-        return data;
-    } catch (error) {
+        // Make the API call
+        const response = await fetch(fullUrl, requestOptions);
+        clearTimeout(timeoutId);
+
+        // Parse response
+        const responseData = (await response.json()) as IApiResponse<TData>;
+        const duration = Date.now() - start;
+
+        // Log the API call
+        logApiCall(
+            {
+                method,
+                url: fullUrl,
+                status: response.status,
+                duration,
+                body,
+                response: responseData,
+            },
+            'CLIENT API',
+        );
+
+        // Return structured response with all fields from backend
         return {
+            status: response.status,
+            success: response.ok && responseData.success !== false,
+            message: responseData.message,
+            error: responseData.error,
+            data: responseData.data,
+        };
+    } catch (error) {
+        const duration = Date.now() - start;
+        const errorMessage = getErrorMessage(error);
+
+        // Log the error
+        logApiCall(
+            {
+                method,
+                url: fullUrl,
+                status: 500,
+                duration,
+                body,
+                error: errorMessage,
+            },
+            'CLIENT API',
+        );
+
+        // Handle abort/timeout errors
+        if (isAbortError(error)) {
+            return {
+                status: 408,
+                success: false,
+                error: 'Request timeout',
+            };
+        }
+
+        // Generic error response
+        return {
+            status: 500,
             success: false,
-            error: error instanceof Error ? error.message : 'Network error occurred',
+            error: errorMessage,
         };
     }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Exported Methods
-// ─────────────────────────────────────────────────────────────────────────────
+// =============================================
+// Convenience Methods
+// =============================================
 
-export const http = {
-    get: <T>(endpoint: string, options?: Omit<RequestOptions, 'body'>) => request<T>('GET', endpoint, options),
+export const clientApi = {
+    get: <TData>(url: string, headers?: Record<string, string>): Promise<IApiResponse<TData>> => clientApiCall<TData>({ method: 'GET', url, headers }),
 
-    post: <T>(endpoint: string, body?: Record<string, unknown>, options?: Omit<RequestOptions, 'body'>) => request<T>('POST', endpoint, { ...options, body }),
+    post: <TData>(url: string, body: Record<string, unknown>, headers?: Record<string, string>): Promise<IApiResponse<TData>> =>
+        clientApiCall<TData>({ method: 'POST', url, body, headers }),
 
-    put: <T>(endpoint: string, body?: Record<string, unknown>, options?: Omit<RequestOptions, 'body'>) => request<T>('PUT', endpoint, { ...options, body }),
+    put: <TData>(url: string, body: Record<string, unknown>, headers?: Record<string, string>): Promise<IApiResponse<TData>> =>
+        clientApiCall<TData>({ method: 'PUT', url, body, headers }),
 
-    delete: <T>(endpoint: string, options?: RequestOptions) => request<T>('DELETE', endpoint, options),
+    delete: <TData>(url: string, body?: Record<string, unknown>, headers?: Record<string, string>): Promise<IApiResponse<TData>> => {
+        if (body) {
+            return clientApiCall<TData>({ method: 'DELETE', url, body, headers });
+        }
+        return clientApiCall<TData>({ method: 'DELETE', url, headers });
+    },
 };

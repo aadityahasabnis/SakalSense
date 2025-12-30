@@ -2,23 +2,20 @@
 // Admin Authentication Routes
 // =============================================
 
+import { adminAuthController } from '@/controllers';
+import { asyncHandler, authenticateAdmin } from '@/middlewares';
 import { Router, type Router as IRouter } from 'express';
-
-import { asyncHandler } from '../../middlewares/index.js';
-import { authenticateAdmin } from '../../middlewares/auth.middleware.js';
-import { adminAuthController } from '../../controllers/index.js';
-import { ROUTE } from '@/constants/routes/routes.constants.js';
 
 const router: IRouter = Router();
 
 // Public routes
-router.post(ROUTE.LOGIN, asyncHandler(adminAuthController.login));
-router.post(ROUTE.REGISTER, asyncHandler(adminAuthController.register!));
-router.post(ROUTE.SESSIONS, asyncHandler(adminAuthController.getSessions));
-router.post(`${ROUTE.SESSIONS}/:sessionId${ROUTE.TERMINATE}`, asyncHandler(adminAuthController.terminateSession));
+router.post('/login', asyncHandler(adminAuthController.login));
+router.post('/register', asyncHandler(adminAuthController.register!));
+router.post('/sessions', asyncHandler(adminAuthController.getSessions));
+router.post('/sessions/terminate/:sessionId', asyncHandler(adminAuthController.terminateSession));
 
 // Protected routes
-router.post(ROUTE.LOGOUT, authenticateAdmin, asyncHandler(adminAuthController.logout));
-router.patch(ROUTE.UPDATE_PASSWORD, authenticateAdmin, asyncHandler(adminAuthController.updatePassword));
+router.post('/logout', authenticateAdmin, asyncHandler(adminAuthController.logout));
+router.patch('/update-password', authenticateAdmin, asyncHandler(adminAuthController.updatePassword));
 
 export { router as adminAuthRouter };

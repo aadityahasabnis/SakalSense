@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 import { SessionLimitDialog } from './SessionLimitDialog';
 
-import { http } from '@/lib/http';
+import { clientApi } from '@/lib/http';
 import { type ILoginResponse, type ISession } from '@/lib/interfaces';
 import { type StakeholderType } from '@/types/auth.types';
 
@@ -59,7 +59,7 @@ export const CommonLoginForm = ({ role, apiEndpoint, redirectPath, registerPath,
         e.preventDefault();
         setForm((prev) => ({ ...prev, loading: true, error: null }));
 
-        const response = await http.post<ILoginResponse>(apiEndpoint, {
+        const response = await clientApi.post<ILoginResponse>(apiEndpoint, {
             email: form.email,
             password: form.password,
         });
@@ -70,8 +70,8 @@ export const CommonLoginForm = ({ role, apiEndpoint, redirectPath, registerPath,
         }
 
         // Session limit exceeded - show dialog
-        if (response.sessionLimitExceeded && response.activeSessions) {
-            setSessionLimit({ show: true, sessions: response.activeSessions });
+        if (response.data?.sessionLimitExceeded && response.data?.activeSessions) {
+            setSessionLimit({ show: true, sessions: response.data.activeSessions });
             setForm((prev) => ({ ...prev, loading: false }));
             return;
         }

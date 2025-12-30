@@ -4,7 +4,8 @@
 
 import { randomUUID } from 'crypto';
 
-import { type StakeholderType, type DeviceType } from '@/lib/interfaces/auth.types.js';
+import { type DeviceType } from '@/constants/auth.constants.js';
+import { type StakeholderType } from '@/constants/auth.constants.js';
 
 import { getRedis } from '../db/index.js';
 import { type ISession } from '@/lib/interfaces/auth.interfaces.js';

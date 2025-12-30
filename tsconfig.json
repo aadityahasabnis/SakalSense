@@ -1,5 +1,5 @@
 {
     "extends": "./tsconfig.base.json",
     "files": [],
-    "references": [{ "path": "./apps/backend" }, { "path": "./apps/frontend" }, { "path": "./packages/core" }]
+    "references": [{ "path": "./apps/backend" }, { "path": "./apps/frontend" }]
 }

@@ -8,7 +8,7 @@ import { UserModel, type IUserDocument } from '../../models/index.js';
 import { createAuthController } from './base.auth.controller.js';
 import { STAKEHOLDER } from '@/constants/auth.constants.js';
 
-const controller = createAuthController<IUserDocument>({
+export const userAuthController = createAuthController<IUserDocument>({
     role: STAKEHOLDER.USER,
     model: UserModel,
     supportsRegistration: true,
@@ -31,5 +31,3 @@ const controller = createAuthController<IUserDocument>({
         });
     },
 });
-
-export const { login, register, logout, getSessions, terminateSession, updatePassword } = controller;

@@ -6,7 +6,7 @@ import { getDeviceIcon } from '@/constants/icons';
 import { ADMIN_API_ROUTES } from '@/constants/routes/admin.routes';
 import { ADMINISTRATOR_API_ROUTES } from '@/constants/routes/administrator.routes';
 import { USER_API_ROUTES } from '@/constants/routes/user.routes';
-import { http } from '@/lib/http';
+import { clientApi } from '@/lib/http';
 import { type ISession } from '@/lib/interfaces';
 import { type StakeholderType } from '@/types/auth.types';
 
@@ -57,7 +57,7 @@ export const SessionLimitDialog = ({ role, sessions, credentials, onClose, onSes
         setTerminatingId(sessionId);
         setError(null);
 
-        const response = await http.post(getTerminateEndpoint(role, sessionId), {
+        const response = await clientApi.post(getTerminateEndpoint(role, sessionId), {
             email: credentials.email,
             password: credentials.password,
         });

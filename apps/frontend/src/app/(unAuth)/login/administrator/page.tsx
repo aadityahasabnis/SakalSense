@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 
 import { SessionLimitDialog } from '@/components/auth/SessionLimitDialog';
 import { ADMINISTRATOR_API_ROUTES } from '@/constants/routes/administrator.routes';
-import { http } from '@/lib/http';
+import { clientApi } from '@/lib/http';
 import { type ILoginResponse, type ISession } from '@/lib/interfaces';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ const AdministratorLoginPage = () => {
         e.preventDefault();
         setForm((prev) => ({ ...prev, loading: true, error: null }));
 
-        const response = await http.post<ILoginResponse>(ADMINISTRATOR_API_ROUTES.auth.login, {
+        const response = await clientApi.post<ILoginResponse>(ADMINISTRATOR_API_ROUTES.auth.login, {
             email: form.email,
             password: form.password,
         });
@@ -43,8 +43,8 @@ const AdministratorLoginPage = () => {
         }
 
         // Session limit exceeded - show dialog
-        if (response.sessionLimitExceeded && response.activeSessions) {
-            setSessionLimit({ show: true, sessions: response.activeSessions });
+        if (response.data?.sessionLimitExceeded && response.data?.activeSessions) {
+            setSessionLimit({ show: true, sessions: response.data.activeSessions });
             setForm((prev) => ({ ...prev, loading: false }));
             return;
         }

@@ -13,7 +13,6 @@ import { type Server } from 'node:http';
 import { PORT, NODE_ENV } from './config/index.js';
 import { connectMongoDB, connectRedis, disconnectMongoDB, disconnectRedis } from './db/index.js';
 import { createExpressApp } from './app.js';
-import { ROUTE } from './constants/routes/routes.constants.js';
 
 // =============================================
 // Constants
@@ -100,7 +99,7 @@ const bootstrap = async (): Promise<void> => {
         httpServer = app.listen(PORT, () => {
             console.log(`\n✅ ${SERVER_NAME} is running`);
             console.log(`🌐 Local: http://localhost:${PORT}`);
-            console.log(`📊 Health: http://localhost:${PORT}${ROUTE.API}/health`);
+            console.log(`📊 Health: http://localhost:${PORT}/api/health`);
             console.log(`\n💡 Press Ctrl+C to stop\n`);
         });
 

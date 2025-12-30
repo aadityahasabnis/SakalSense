@@ -4,11 +4,10 @@
 
 import { Router, type Router as IRouter } from 'express';
 
-import { healthRouter } from './health/index.js';
 import { authRouter } from './auth/index.js';
-import { ROUTE } from '@/constants/routes/routes.constants.js';
+import { healthRouter } from './health/health.route.js';
 
 export const apiRouter: IRouter = Router();
 
-apiRouter.use(ROUTE.HEALTH, healthRouter);
-apiRouter.use(ROUTE.AUTH, authRouter);
+apiRouter.use('/health', healthRouter);
+apiRouter.use('/auth', authRouter);

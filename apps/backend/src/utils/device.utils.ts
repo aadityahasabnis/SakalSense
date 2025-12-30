@@ -3,7 +3,7 @@
 // =============================================
 
 import { DEVICE } from '@/constants/auth.constants';
-import { type DeviceType } from '@/lib/interfaces/auth.types';
+import { type DeviceType } from '@/constants/auth.constants';
 
 export const detectDevice = (userAgent: string): DeviceType => {
     const ua = userAgent.toLowerCase();

@@ -11,7 +11,7 @@ import { type IAdminRegisterRequest } from '@/lib/interfaces/auth.interfaces.js'
 // TODO: Store invite codes in database with expiry in production
 const VALID_INVITE_CODES = new Set(['ADMIN-INVITE-2024']);
 
-const controller = createAuthController<IAdminDocument>({
+export const adminAuthController = createAuthController<IAdminDocument>({
     role: STAKEHOLDER.ADMIN,
     model: AdminModel,
     supportsRegistration: true,
@@ -36,5 +36,3 @@ const controller = createAuthController<IAdminDocument>({
         });
     },
 });
-
-export const { login, register, logout, getSessions, terminateSession, updatePassword } = controller;
