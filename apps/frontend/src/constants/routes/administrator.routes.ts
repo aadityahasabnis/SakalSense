@@ -29,4 +29,9 @@ export const ADMINISTRATOR_API_ROUTES = {
         logs: '/administrator/system/logs',
         stats: '/administrator/system/stats',
     },
+    mail: {
+        test: '/mail/test',
+        logs: '/mail/logs',
+        stats: '/mail/stats',
+    },
 } as const;

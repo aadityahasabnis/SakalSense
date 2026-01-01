@@ -20,6 +20,9 @@ export const REDIS_PASSWORD: string | undefined = process.env.REDIS_PASSWORD;
 export const JWT_SECRET: string = process.env.JWT_SECRET ?? '';
 export const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN ?? '7d';
 
+export const GMAIL_ACCOUNT: string = process.env.GMAIL_ACCOUNT ?? '';
+export const GMAIL_PASSWORD: string = process.env.GMAIL_PASSWORD ?? '';
+
 export const CORS_ORIGINS: Array<string> = (process.env.CORS_ORIGINS ?? 'http://localhost:3000').split(',').map((origin) => origin.trim());
 
 // Validation - fails fast on missing required variables

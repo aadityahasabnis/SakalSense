@@ -1,4 +1,4 @@
 // Server actions barrel export
-// Usage: import { loginAction, registerAction } from '@/server/actions';
+// Usage: import { sendTestMailAction } from '@/server/actions';
 
-export {};
+export * from './mails';

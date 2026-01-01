@@ -10,9 +10,10 @@ import { DEBUG_LOG_KEY_PREFIX, DEBUG_LOG_TTL } from '@/constants/http.constants.
 
 // Generate time-sortable ID (timestamp + random suffix)
 const generateId = (): string => {
-    const date = formatDate(new Date(), { includeYear: true, includeTime: true, includeSeconds: true });
-    const random = Math.random().toString(36).substring(2, 4);
-    return `${date}_${random}`;
+    const now = new Date();
+    const timestamp = now.getTime(); // Unix timestamp for sortability
+    const random = Math.random().toString(36).substring(2, 6);
+    return `${timestamp}_${random}`;
 };
 
 // Build Redis key with date prefix for efficient querying
