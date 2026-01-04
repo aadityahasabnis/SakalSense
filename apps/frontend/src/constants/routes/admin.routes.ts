@@ -10,5 +10,7 @@ export const ADMIN_API_ROUTES = {
         sessions: '/auth/admin/sessions',
         terminateSession: (id: string) => `/auth/admin/sessions/${id}/terminate`,
         updatePassword: '/auth/admin/update-password',
+        forgotPassword: '/auth/admin/forgot-password',
+        resetPassword: '/auth/admin/reset-password',
     },
 } as const;

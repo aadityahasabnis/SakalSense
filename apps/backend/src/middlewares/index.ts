@@ -9,3 +9,4 @@ export * from './cors.middleware.js';
 export * from './auth.middleware.js';
 export * from './debugLogger.middleware.js';
 export * from './mailLogger.middleware.js';
+export * from './rateLimit.middleware.js';

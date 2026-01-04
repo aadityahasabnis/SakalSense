@@ -112,6 +112,11 @@ const AdministratorLoginPage = () => {
                                 className='w-full rounded-xl border border-zinc-600 bg-zinc-700/50 px-4 py-3 text-white placeholder-zinc-400 transition-all focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20'
                                 placeholder='Enter your password'
                             />
+                            <div className='mt-2 text-right'>
+                                <a href='/forgot-password/administrator' className='text-sm text-zinc-400 hover:text-amber-400 transition-colors'>
+                                    Forgot Password?
+                                </a>
+                            </div>
                         </div>
 
                         <button

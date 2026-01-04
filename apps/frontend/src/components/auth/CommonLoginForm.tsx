@@ -20,6 +20,7 @@ interface CommonLoginFormProps {
     apiEndpoint: string;
     redirectPath: string;
     registerPath?: string;
+    forgotPasswordPath?: string;
     title?: string;
     subtitle?: string;
 }
@@ -40,7 +41,7 @@ interface SessionLimitState {
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const CommonLoginForm = ({ role, apiEndpoint, redirectPath, registerPath, title = 'Welcome Back', subtitle }: CommonLoginFormProps) => {
+export const CommonLoginForm = ({ role, apiEndpoint, redirectPath, registerPath, forgotPasswordPath, title = 'Welcome Back', subtitle }: CommonLoginFormProps) => {
     const router = useRouter();
 
     const [form, setForm] = useState<LoginFormState>({
@@ -126,6 +127,13 @@ export const CommonLoginForm = ({ role, apiEndpoint, redirectPath, registerPath,
                                 className='w-full rounded-xl border border-slate-600 bg-slate-700/50 px-4 py-3 text-white placeholder-slate-400 transition-all focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20'
                                 placeholder='Enter your password'
                             />
+                            {forgotPasswordPath && (
+                                <div className='mt-2 text-right'>
+                                    <Link href={forgotPasswordPath} className='text-sm text-slate-400 hover:text-blue-400 transition-colors'>
+                                        Forgot Password?
+                                    </Link>
+                                </div>
+                            )}
                         </div>
 
                         <button

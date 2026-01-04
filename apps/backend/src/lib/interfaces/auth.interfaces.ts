@@ -64,3 +64,15 @@ export interface IUpdatePasswordRequest {
     currentPassword: string;
     newPassword: string;
 }
+
+// Forgot password request (public)
+export interface IForgotPasswordRequest {
+    email: string;
+}
+
+// Reset password request (public, with token)
+export interface IResetPasswordRequest {
+    token: string;
+    newPassword: string;
+}
+

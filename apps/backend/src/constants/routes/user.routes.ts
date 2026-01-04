@@ -10,6 +10,8 @@ export const USER_API_ROUTES = {
         sessions: '/auth/user/sessions',
         terminateSession: (id: string) => `/auth/user/sessions/terminate/${id}`,
         updatePassword: '/auth/user/update-password',
+        forgotPassword: '/auth/user/forgot-password',
+        resetPassword: '/auth/user/reset-password',
     },
     profile: {
         get: '/user/profile',

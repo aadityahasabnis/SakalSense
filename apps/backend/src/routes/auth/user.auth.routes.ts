@@ -2,17 +2,20 @@
 // User Authentication Routes
 // =============================================
 
-import { userAuthController } from '@/controllers';
-import { asyncHandler, authenticateUser } from '@/middlewares';
 import { Router, type Router as IRouter } from 'express';
+
+import { userAuthController } from '@/controllers';
+import { asyncHandler, authenticateUser, rateLimitAuth, rateLimitStrict } from '@/middlewares';
 
 const router: IRouter = Router();
 
-// Public routes
-router.post('/login', asyncHandler(userAuthController.login));
-router.post('/register', asyncHandler(userAuthController.register!));
-router.post('/sessions', asyncHandler(userAuthController.getSessions));
-router.post('/sessions/terminate/:sessionId', asyncHandler(userAuthController.terminateSession));
+// Public routes (rate limited)
+router.post('/login', rateLimitAuth, asyncHandler(userAuthController.login));
+router.post('/register', rateLimitAuth, asyncHandler(userAuthController.register!));
+router.post('/sessions', rateLimitStrict, asyncHandler(userAuthController.getSessions));
+router.post('/sessions/terminate/:sessionId', rateLimitStrict, asyncHandler(userAuthController.terminateSession));
+router.post('/forgot-password', rateLimitStrict, asyncHandler(userAuthController.forgotPassword));
+router.post('/reset-password', rateLimitStrict, asyncHandler(userAuthController.resetPassword));
 
 // Protected routes
 router.post('/logout', authenticateUser, asyncHandler(userAuthController.logout));

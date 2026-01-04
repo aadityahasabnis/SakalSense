@@ -9,9 +9,10 @@ import { type Model, type Document, type Types } from 'mongoose';
 import { type IAuthenticatedRequest } from '../../interfaces/index.js';
 import { hashPassword, verifyPassword, generateJWT, setAuthCookie, clearAuthCookie } from '../../services/index.js';
 import { createSession, getActiveSessions, invalidateSession } from '../../services/session.service.js';
-import { type DeviceType } from '@/constants/auth.constants.js';
-import { type StakeholderType } from '@/constants/auth.constants.js';
-import { type IUpdatePasswordRequest, type IJWTPayload, type ILoginRequest } from '@/lib/interfaces/auth.interfaces.js';
+import { generateResetToken, validateResetToken, invalidateResetToken } from '../../services/password-reset.service.js';
+import { sendPasswordResetEmail } from '../../services/mail.service.js';
+import { type DeviceType, type StakeholderType } from '@/constants/auth.constants.js';
+import { type IUpdatePasswordRequest, type IJWTPayload, type ILoginRequest, type IForgotPasswordRequest, type IResetPasswordRequest } from '@/lib/interfaces/auth.interfaces.js';
 import { HTTP_STATUS } from '@/constants/http.constants.js';
 import { detectDevice, getClientIP } from '@/utils/device.utils.js';
 import { getLocationFromIP, resolveClientIP } from '@/utils/geolocation.utils.js';
@@ -70,6 +71,8 @@ export interface IAuthController {
     getSessions: (req: Request, res: Response) => Promise<void>;
     terminateSession: (req: Request, res: Response) => Promise<void>;
     updatePassword: (req: Request, res: Response) => Promise<void>;
+    forgotPassword: (req: Request, res: Response) => Promise<void>;
+    resetPassword: (req: Request, res: Response) => Promise<void>;
 }
 
 // Factory function to create auth controllers
@@ -251,5 +254,97 @@ export const createAuthController = <T extends IBaseStakeholderDocument>(config:
         res.json({ success: true, message: 'Password updated successfully' });
     };
 
-    return { login, register, logout, getSessions, terminateSession, updatePassword };
+    // Forgot password handler (public - sends reset email)
+    const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+        const { email } = req.body as IForgotPasswordRequest;
+
+        // Validate email
+        if (!email) {
+            res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Email is required' });
+            return;
+        }
+
+        // Always respond with success for security (don't reveal if email exists)
+        const successResponse = { success: true, message: 'If that email exists, a password reset link has been sent' };
+
+        // Find user by email
+        const entity = await model.findOne({ email: email.toLowerCase(), isActive: true });
+        if (!entity) {
+            res.json(successResponse);
+            return;
+        }
+
+        const userId = (entity._id as { toString(): string }).toString();
+
+        // Generate reset token
+        const token = await generateResetToken(userId, email.toLowerCase(), role);
+
+        // Build reset link using request origin (role is encoded in token prefix)
+        const origin = req.get('origin') ?? req.get('referer')?.replace(/\/[^/]*$/, '') ?? 'http://localhost:3000';
+        const resetLink = `${origin}/reset-password?token=${token}`;
+
+        // Send password reset email
+        await sendPasswordResetEmail(email.toLowerCase(), {
+            recipientName: entity.fullName,
+            resetLink,
+            expiresIn: '1 hour',
+        });
+
+        res.json(successResponse);
+    };
+
+    // Reset password handler (public - with token from email)
+    const resetPassword = async (req: Request, res: Response): Promise<void> => {
+        const { token, newPassword } = req.body as IResetPasswordRequest;
+
+        // Validate required fields
+        if (!token || !newPassword) {
+            res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Token and new password are required' });
+            return;
+        }
+
+        // Validate new password minimum length
+        if (newPassword.length < 8) {
+            res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'New password must be at least 8 characters' });
+            return;
+        }
+
+        // Validate token (now returns { data, role } from prefixed token)
+        const tokenResult = await validateResetToken(token);
+        if (!tokenResult) {
+            res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Invalid or expired reset link' });
+            return;
+        }
+
+        // Verify the token role matches this controller's role
+        if (tokenResult.role !== role) {
+            res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'Invalid reset link for this account type' });
+            return;
+        }
+
+        // Find user
+        const entity = await model.findById(tokenResult.data.userId).select('+password');
+        if (!entity || !entity.isActive) {
+            res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, error: 'User not found' });
+            return;
+        }
+
+        // Prevent password reuse
+        const isSamePassword = await verifyPassword(newPassword, entity.password);
+        if (isSamePassword) {
+            res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, error: 'New password must be different from current password' });
+            return;
+        }
+
+        // Hash and update password
+        const hashedPassword = await hashPassword(newPassword);
+        await model.findByIdAndUpdate(tokenResult.data.userId, { password: hashedPassword });
+
+        // Invalidate used token
+        await invalidateResetToken(token);
+
+        res.json({ success: true, message: 'Password has been reset successfully' });
+    };
+
+    return { login, register, logout, getSessions, terminateSession, updatePassword, forgotPassword, resetPassword };
 };

@@ -1,4 +1,6 @@
+import { LogoutButton } from '@/components/auth/LogoutButton';
 import { STAKEHOLDER, STAKEHOLDER_LABELS } from '@/constants/auth.constants';
+import { USER_API_ROUTES } from '@/constants/routes/user.routes';
 import { getCookieInfo, getCurrentUser } from '@/lib/auth';
 
 const UserDashboardPage = async () => {
@@ -63,14 +65,7 @@ const UserDashboardPage = async () => {
 
                 {/* Quick Actions */}
                 <div className='mt-6 flex justify-center'>
-                    <form action='/api/auth/user/logout' method='POST'>
-                        <button
-                            type='submit'
-                            className='rounded-xl bg-gradient-to-r from-red-600 to-red-500 px-6 py-3 font-semibold text-white shadow-lg shadow-red-500/25 transition-all hover:from-red-500 hover:to-red-400'
-                        >
-                            Logout
-                        </button>
-                    </form>
+                    <LogoutButton role='USER' apiEndpoint={USER_API_ROUTES.auth.logout} loginPath='/login' />
                 </div>
             </div>
         </div>

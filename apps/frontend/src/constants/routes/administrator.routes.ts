@@ -9,6 +9,8 @@ export const ADMINISTRATOR_API_ROUTES = {
         sessions: '/auth/administrator/sessions',
         terminateSession: (id: string) => `/auth/administrator/sessions/terminate/${id}`,
         updatePassword: '/auth/administrator/update-password',
+        forgotPassword: '/auth/administrator/forgot-password',
+        resetPassword: '/auth/administrator/reset-password',
     },
     admins: {
         list: '/administrator/admins',
