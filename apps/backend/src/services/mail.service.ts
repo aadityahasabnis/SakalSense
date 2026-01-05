@@ -4,10 +4,10 @@
 
 import nodemailer from 'nodemailer';
 
-import { GMAIL_ACCOUNT, GMAIL_PASSWORD } from '@/config/index.js';
+import { GMAIL_ACCOUNT, GMAIL_PASSWORD } from '@/config/env.js';
 import { GMAIL_SMTP_CONFIG, EMAIL_RETRY_CONFIG, DEFAULT_SENDER, EMAIL_STATUS, type EmailType } from '@/constants/email.constants.js';
 import { type IEmailPayload, type IEmailResult, type IOtpEmailData, type IPasswordResetEmailData } from '@/lib/interfaces/email.interfaces.js';
-import { otpEmailTemplate, passwordResetEmailTemplate, testEmailTemplate, notificationEmailTemplate } from '@/lib/templates/index.js';
+import { otpEmailTemplate, passwordResetEmailTemplate, testEmailTemplate, notificationEmailTemplate } from '@/lib/templates/email.templates.js';
 import { validateEmail, sanitizeEmailAddress, delay } from '@/utils/mail.utils.js';
 import { createMailLog } from '@/middlewares';
 

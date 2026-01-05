@@ -6,7 +6,7 @@
 import { type Request, type Response } from 'express';
 import { type Model, type Document, type Types } from 'mongoose';
 
-import { type IAuthenticatedRequest } from '../../interfaces/index.js';
+import { type IAuthenticatedRequest } from '@/lib/interfaces/express.interfaces.js';
 import { hashPassword, verifyPassword, generateJWT, setAuthCookie, clearAuthCookie } from '../../services/index.js';
 import { createSession, getActiveSessions, invalidateSession } from '../../services/session.service.js';
 import { generateResetToken, validateResetToken, invalidateResetToken } from '../../services/password-reset.service.js';
@@ -15,7 +15,7 @@ import { type DeviceType, type StakeholderType } from '@/constants/auth.constant
 import { type IUpdatePasswordRequest, type IJWTPayload, type ILoginRequest, type IForgotPasswordRequest, type IResetPasswordRequest } from '@/lib/interfaces/auth.interfaces.js';
 import { HTTP_STATUS } from '@/constants/http.constants.js';
 import { detectDevice, getClientIP } from '@/utils/device.utils.js';
-import { getLocationFromIP, resolveClientIP } from '@/utils/geolocation.utils.js';
+import { getClientIP as getCleanIP, getLocationLabel } from '@/utils/geolocation.utils.js';
 
 // Base document interface for all stakeholder models
 interface IBaseStakeholderDocument extends Document {
@@ -36,12 +36,12 @@ interface IAuthControllerConfig<T extends IBaseStakeholderDocument> {
     createDocument?: (body: Record<string, unknown>, hashedPassword: string) => Promise<T>;
 }
 
-// Shared request context extraction
-const extractRequestContext = async (req: Request): Promise<{ device: DeviceType; ip: string; location: string | null; userAgent: string }> => {
+// Shared request context extraction (fast - no external API calls)
+const extractRequestContext = (req: Request): { device: DeviceType; ip: string; location: string | null; userAgent: string } => {
     const device = detectDevice(req.get('user-agent') ?? '');
-    const detectedIP = getClientIP(req);
-    const ip = await resolveClientIP(detectedIP);
-    const location = await getLocationFromIP(ip);
+    const rawIP = getClientIP(req);
+    const ip = getCleanIP(rawIP);
+    const location = getLocationLabel(ip);
     const userAgent = req.get('user-agent') ?? '';
     return { device, ip, location, userAgent };
 };
@@ -95,7 +95,7 @@ export const createAuthController = <T extends IBaseStakeholderDocument>(config:
         }
 
         const userId = (entity._id as { toString(): string }).toString();
-        const { device, ip, location, userAgent } = await extractRequestContext(req);
+        const { device, ip, location, userAgent } = extractRequestContext(req);
         const { session, limitExceeded, activeSessions } = await createSession(userId, role, device, ip, userAgent, location);
 
         if (limitExceeded) {
@@ -142,7 +142,7 @@ export const createAuthController = <T extends IBaseStakeholderDocument>(config:
                   const entity = await createDocument(body, hashedPassword);
 
                   const userId = (entity._id as { toString(): string }).toString();
-                  const { device, ip, location, userAgent } = await extractRequestContext(req);
+                  const { device, ip, location, userAgent } = extractRequestContext(req);
                   const { session } = await createSession(userId, role, device, ip, userAgent, location);
 
                   const token = generateJWT(buildJWTPayload(userId, entity.fullName, null, role, session.sessionId));

@@ -1,11 +1,19 @@
 // =============================================
-// Rate Limit Service - Sliding window with Redis Sorted Sets
+// Rate Limit Service - Sliding window algorithm with Redis Sorted Sets
 // =============================================
 
 import { getRedis } from '@/db/index.js';
 import { RATE_LIMIT_KEY_PREFIX } from '@/constants/rateLimit.constants.js';
 
+// =============================================
 // Types
+// =============================================
+
+export interface IRateLimitConfig {
+    windowMs: number;
+    maxRequests: number;
+}
+
 export interface IRateLimitResult {
     allowed: boolean;
     remaining: number;
@@ -13,63 +21,67 @@ export interface IRateLimitResult {
     retryAfter?: number;
 }
 
-export interface IRateLimitConfig {
-    windowMs: number;
-    maxRequests: number;
-}
+// =============================================
+// Key Builder - Clean, flat namespace
+// =============================================
 
-// Redis key builder
-const buildKey = (id: string): string => `${RATE_LIMIT_KEY_PREFIX}:${id}`;
+// Sanitize identifier to prevent nested folders in Redis
+const sanitizeId = (id: string): string => id.replace(/[:/\\]/g, '_').toLowerCase();
 
-// Consume rate limit - check and record request atomically
-export const consumeRateLimit = async (id: string, { windowMs, maxRequests }: IRateLimitConfig): Promise<IRateLimitResult> => {
+// Build Redis key: ratelimit:sanitized_identifier
+const buildKey = (identifier: string): string => `${RATE_LIMIT_KEY_PREFIX}:${sanitizeId(identifier)}`;
+
+// =============================================
+// Core Functions
+// =============================================
+export const consumeRateLimit = async (identifier: string, config: IRateLimitConfig): Promise<IRateLimitResult> => {
     const redis = getRedis();
-    const key = buildKey(id);
+    const key = buildKey(identifier);
     const now = Date.now();
-    const requestId = `${now}:${Math.random().toString(36).slice(2, 8)}`;
+    const windowStart = now - config.windowMs;
+    const requestId = `${now}_${Math.random().toString(36).slice(2, 6)}`;
 
-    // Pipeline: cleanup expired -> count -> add new -> set TTL
-    const multi = redis.multi();
-    multi.zRemRangeByScore(key, 0, now - windowMs);
-    multi.zCard(key);
-    multi.zAdd(key, { score: now, value: requestId });
-    multi.expire(key, Math.ceil(windowMs / 1000));
+    // Atomic pipeline: cleanup → count → add → expire
+    const pipeline = redis.multi();
+    pipeline.zRemRangeByScore(key, 0, windowStart);
+    pipeline.zCard(key);
+    pipeline.zAdd(key, { score: now, value: requestId });
+    pipeline.expire(key, Math.ceil(config.windowMs / 1000));
 
-    const results = await multi.exec();
-    const count = typeof results?.[1] === 'number' ? results[1] : 0;
-    const resetAt = now + windowMs;
+    const results = await pipeline.exec();
+    const currentCount = typeof results?.[1] === 'number' ? results[1] : 0;
+    const resetAt = now + config.windowMs;
 
-    // Over limit: rollback and reject
-    if (count >= maxRequests) {
+    // Over limit: rollback the added request
+    if (currentCount >= config.maxRequests) {
         await redis.zRem(key, requestId);
         const oldest = await redis.zRangeWithScores(key, 0, 0);
-        const retryAfter = Math.max(1, Math.ceil(((oldest[0]?.score ?? now) + windowMs - now) / 1000));
+        const oldestTime = oldest[0]?.score ?? now;
+        const retryAfter = Math.max(1, Math.ceil((oldestTime + config.windowMs - now) / 1000));
         return { allowed: false, remaining: 0, resetAt, retryAfter };
     }
 
-    return { allowed: true, remaining: maxRequests - count - 1, resetAt };
+    return { allowed: true, remaining: config.maxRequests - currentCount - 1, resetAt };
 };
 
-// Check rate limit without consuming (read-only)
-export const checkRateLimit = async (id: string, { windowMs, maxRequests }: IRateLimitConfig): Promise<IRateLimitResult> => {
+export const checkRateLimit = async (identifier: string, config: IRateLimitConfig): Promise<IRateLimitResult> => {
     const redis = getRedis();
-    const key = buildKey(id);
+    const key = buildKey(identifier);
     const now = Date.now();
 
-    await redis.zRemRangeByScore(key, 0, now - windowMs);
+    await redis.zRemRangeByScore(key, 0, now - config.windowMs);
     const count = await redis.zCard(key);
-    const resetAt = now + windowMs;
+    const resetAt = now + config.windowMs;
 
-    if (count >= maxRequests) {
+    if (count >= config.maxRequests) {
         const oldest = await redis.zRangeWithScores(key, 0, 0);
-        const retryAfter = Math.max(1, Math.ceil(((oldest[0]?.score ?? now) + windowMs - now) / 1000));
+        const retryAfter = Math.max(1, Math.ceil(((oldest[0]?.score ?? now) + config.windowMs - now) / 1000));
         return { allowed: false, remaining: 0, resetAt, retryAfter };
     }
 
-    return { allowed: true, remaining: maxRequests - count, resetAt };
+    return { allowed: true, remaining: config.maxRequests - count, resetAt };
 };
 
-// Reset rate limit for identifier (admin use)
-export const resetRateLimit = async (id: string): Promise<void> => {
-    await getRedis().del(buildKey(id));
+export const resetRateLimit = async (identifier: string): Promise<void> => {
+    await getRedis().del(buildKey(identifier));
 };

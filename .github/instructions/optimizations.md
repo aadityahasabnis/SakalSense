@@ -193,3 +193,21 @@ BUT IT SHOULD BE THE BEST WAY POSSIBLE - AND THE OPTIMIZED WAY
 
 THINK BETTER AND DO THE CHANGSE...
 <<
+
+
+
+NOW, we have to remove the logic- for the the session - location api
+dont make api call to the - http://ip-api.com/json/?fields=query
+
+its taking much time
+<<
+insead this, think for the better approach
+<<
+that wont use any external api - to be dependent on it...
+    >>>> 
+we have to make this very fast 
+<<
+so think accordingly ->>
+for the fastest professional approach
+<<
+>>

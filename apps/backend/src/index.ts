@@ -10,7 +10,7 @@
 
 import { type Server } from 'node:http';
 
-import { PORT, NODE_ENV } from './config/index.js';
+import { PORT, NODE_ENV } from './config/env.js';
 import { connectMongoDB, connectRedis, disconnectMongoDB, disconnectRedis } from './db/index.js';
 import { createExpressApp } from './app.js';
 

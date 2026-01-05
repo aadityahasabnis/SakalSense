@@ -13,7 +13,7 @@ import compression from 'compression';
 const require = createRequire(import.meta.url);
 const helmet = require('helmet');
 
-import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config/index.js';
+import { validateEnv, IS_PRODUCTION, IS_DEVELOPMENT } from './config/env.js';
 import { apiRouter } from './routes/index.js';
 import { errorHandler, requestLogger, corsMiddleware, parseCookies, debugLoggerMiddleware } from './middlewares/index.js';
 

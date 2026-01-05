@@ -1,54 +1,77 @@
 // =============================================
-// Mail Logger Middleware - Auto-logs all emails to Redis
+// Mail Logger Middleware - Auto-logs all emails to Redis with optimized stats
 // =============================================
 
 import { getRedis } from '@/db/index.js';
 import { EMAIL_LOG_TTL, EMAIL_LOG_KEY_PREFIX } from '@/constants/email.constants.js';
 import { type IEmailLogEntry } from '@/lib/interfaces/email.interfaces.js';
 import { formatDate } from '@/utils/date.utils.js';
-import { generateEmailId, buildEmailLogKey, sanitizeEmailAddress } from '@/utils/mail.utils.js';
+import { generateEmailId, buildEmailLogKey } from '@/utils/mail.utils.js';
+
+// Stats counter keys
+const STATS_KEY = {
+    SENT: `${EMAIL_LOG_KEY_PREFIX}:stats:sent`,
+    FAILED: `${EMAIL_LOG_KEY_PREFIX}:stats:failed`,
+    TOTAL: `${EMAIL_LOG_KEY_PREFIX}:stats:total`,
+} as const;
 
 // createMailLog: Store email log entry in Redis with 7-day TTL
-// Key format: maillog:STATUS:date:id (organized by status for easy querying)
 export const createMailLog = async (entry: Omit<IEmailLogEntry, 'id' | 'timestamp'>): Promise<void> => {
     try {
         const redis = getRedis();
         const id = generateEmailId();
         const timestamp = formatDate(new Date(), { includeTime: true, includeSeconds: true });
 
-        const logEntry: IEmailLogEntry = {
-            id,
-            timestamp,
-            ...entry,
-        };
-
-        // Key structure: maillog:SENT:1 Jan 2026:id or maillog:FAILED:1 Jan 2026:id
+        const logEntry: IEmailLogEntry = { id, timestamp, ...entry };
         const key = buildEmailLogKey(entry.status, id);
-        await redis.setEx(key, EMAIL_LOG_TTL, JSON.stringify(logEntry));
+
+        // Use pipeline for atomic operations
+        const pipeline = redis.multi();
+        pipeline.setEx(key, EMAIL_LOG_TTL, JSON.stringify(logEntry));
+        pipeline.incr(STATS_KEY.TOTAL);
+        pipeline.incr(entry.status === 'SENT' ? STATS_KEY.SENT : STATS_KEY.FAILED);
+        await pipeline.exec();
     } catch (error) {
         console.error('[MailLog] Failed to write log:', error);
     }
+};
+
+// Scan for keys matching pattern (non-blocking)
+const scanKeys = async (pattern: string, limit?: number): Promise<Array<string>> => {
+    const redis = getRedis();
+    const keys: Array<string> = [];
+    for await (const key of redis.scanIterator({ MATCH: pattern, COUNT: 100 })) {
+        if (typeof key === 'string') {
+            keys.push(key);
+            if (limit && keys.length >= limit) break;
+        }
+    }
+    return keys;
 };
 
 // getMailLogsByRecipient: Retrieve all email logs for a specific recipient
 export const getMailLogsByRecipient = async (recipientEmail: string): Promise<Array<IEmailLogEntry>> => {
     try {
         const redis = getRedis();
-        const sanitizedEmail = sanitizeEmailAddress(recipientEmail);
-        const pattern = `${EMAIL_LOG_KEY_PREFIX}:${sanitizedEmail}:*`;
-        const keys = await redis.keys(pattern);
+        const sanitizedEmail = recipientEmail.toLowerCase().replace(/[^a-z0-9@._-]/g, '');
+        const pattern = `${EMAIL_LOG_KEY_PREFIX}:*:*:*`;
+        const keys = await scanKeys(pattern, 200);
 
         if (keys.length === 0) return [];
 
+        // Batch get with MGET
+        const values = await redis.mGet(keys);
         const logs: Array<IEmailLogEntry> = [];
-        for (const key of keys) {
-            const data = await redis.get(key);
+
+        for (const data of values) {
             if (data) {
-                logs.push(JSON.parse(data) as IEmailLogEntry);
+                const log = JSON.parse(data) as IEmailLogEntry;
+                if (log.recipient.toLowerCase() === sanitizedEmail) {
+                    logs.push(log);
+                }
             }
         }
 
-        // Sort by timestamp descending (newest first)
         return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     } catch (error) {
         console.error('[MailLog] Failed to read logs:', error);
@@ -61,19 +84,16 @@ export const getRecentMailLogs = async (limit: number = 50): Promise<Array<IEmai
     try {
         const redis = getRedis();
         const pattern = `${EMAIL_LOG_KEY_PREFIX}:*`;
-        const keys = await redis.keys(pattern);
+        const keys = await scanKeys(pattern, limit * 2);
 
         if (keys.length === 0) return [];
 
-        const logs: Array<IEmailLogEntry> = [];
-        for (const key of keys.slice(0, limit * 2)) {
-            const data = await redis.get(key);
-            if (data) {
-                logs.push(JSON.parse(data) as IEmailLogEntry);
-            }
-        }
+        // Batch get with MGET
+        const values = await redis.mGet(keys);
+        const logs: Array<IEmailLogEntry> = values
+            .filter((data): data is string => data !== null)
+            .map((data) => JSON.parse(data) as IEmailLogEntry);
 
-        // Sort and limit
         return logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, limit);
     } catch (error) {
         console.error('[MailLog] Failed to read logs:', error);
@@ -81,28 +101,27 @@ export const getRecentMailLogs = async (limit: number = 50): Promise<Array<IEmai
     }
 };
 
-// getMailLogStats: Get email statistics
+// getMailLogStats: Get email statistics using counters (O(1) instead of O(N))
 export const getMailLogStats = async (): Promise<{ total: number; sent: number; failed: number }> => {
     try {
         const redis = getRedis();
-        const pattern = `${EMAIL_LOG_KEY_PREFIX}:*`;
-        const keys = await redis.keys(pattern);
 
-        let sent = 0;
-        let failed = 0;
+        // Use MGET for single round-trip
+        const values = await redis.mGet([STATS_KEY.TOTAL, STATS_KEY.SENT, STATS_KEY.FAILED]);
 
-        for (const key of keys) {
-            const data = await redis.get(key);
-            if (data) {
-                const log = JSON.parse(data) as IEmailLogEntry;
-                if (log.status === 'SENT') sent++;
-                else if (log.status === 'FAILED') failed++;
-            }
-        }
-
-        return { total: keys.length, sent, failed };
+        return {
+            total: parseInt(values[0] ?? '0', 10),
+            sent: parseInt(values[1] ?? '0', 10),
+            failed: parseInt(values[2] ?? '0', 10),
+        };
     } catch (error) {
         console.error('[MailLog] Failed to get stats:', error);
         return { total: 0, sent: 0, failed: 0 };
     }
+};
+
+// resetMailLogStats: Reset all stats counters (admin use)
+export const resetMailLogStats = async (): Promise<void> => {
+    const redis = getRedis();
+    await redis.del([STATS_KEY.TOTAL, STATS_KEY.SENT, STATS_KEY.FAILED]);
 };

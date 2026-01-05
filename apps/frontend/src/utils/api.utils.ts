@@ -3,7 +3,7 @@
 // =============================================
 
 import { IS_DEVELOPMENT } from '@/env';
-import { type FormDataType } from '@/types/common.types';
+import { type IFormData as IFormData } from '@/types/common.types';
 
 // =============================================
 // Configuration
@@ -44,8 +44,8 @@ export const logApiCall = (logData: ILogData, prefix = 'API'): void => {
 // Helper Functions
 // =============================================
 
-export const formDataToJson = (formData: FormData): FormDataType => {
-    const json: FormDataType = {};
+export const formDataToJson = (formData: FormData): IFormData => {
+    const json: IFormData = {};
     formData.forEach((value, key) => {
         json[key] = value;
     });

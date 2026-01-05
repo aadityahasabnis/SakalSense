@@ -4,7 +4,7 @@
 
 import { type ISession } from './auth.interfaces';
 
-import { type FormDataType } from '@/types/common.types';
+import { type IFormData } from '@/types/common.types';
 
 // HTTP method type
 export type HttpMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
@@ -13,12 +13,12 @@ export type HttpMethodType = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 export interface IApiRequest {
     method: HttpMethodType;
     url: string;
-    body?: FormDataType;
+    body?: IFormData;
     headers?: Record<string, string>;
 }
 
 // API response structure
-export interface IApiResponse<T = FormDataType> {
+export interface IApiResponse<T = IFormData> {
     status?: number;
     success: boolean;
     data?: T;
@@ -35,7 +35,7 @@ export interface IApiResponse<T = FormDataType> {
 }
 
 // API state for hooks
-export interface IApiState<T = FormDataType> {
+export interface IApiState<T = IFormData> {
     data: T | null;
     loading: boolean;
     error: string | null;

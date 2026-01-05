@@ -2,10 +2,10 @@
 // HTTP Interfaces - Response structures with strict typing
 // =============================================
 
-import { type HealthStatusType, type FormDataType } from './common.types';
+import { type HealthStatusType, type IFormData } from './common.types';
 
 // IActionSuccessResponse: Used when API call succeeds
-interface IActionSuccessResponse<TData extends FormDataType | Array<FormDataType> | undefined = undefined> {
+interface IActionSuccessResponse<TData extends IFormData | Array<IFormData> | undefined = undefined> {
     success: true;
     data?: TData;
 }
@@ -25,7 +25,7 @@ interface IActionErrorResponse {
 }
 
 // IActionResponse: Union type combining all response variants
-export type IActionResponse<TData extends FormDataType | Array<FormDataType> | undefined = undefined> = Promise<IActionSuccessResponse<TData> | IActionErrorResponse | IActionMessageResponse>;
+export type IActionResponse<TData extends IFormData | Array<IFormData> | undefined = undefined> = Promise<IActionSuccessResponse<TData> | IActionErrorResponse | IActionMessageResponse>;
 
 // IHealthResponse: Dedicated interface for health check endpoint
 export interface IHealthResponse {
@@ -48,7 +48,7 @@ export interface IPaginationMeta {
 }
 
 // IPaginatedResponse: Extends success response with pagination metadata
-export interface IPaginatedResponse<TData extends FormDataType> extends Omit<IActionSuccessResponse<TData>, 'data'> {
+export interface IPaginatedResponse<TData extends IFormData> extends Omit<IActionSuccessResponse<TData>, 'data'> {
     data: Array<TData>;
     meta: IPaginationMeta;
 }

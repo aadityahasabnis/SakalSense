@@ -4,8 +4,7 @@
 
 import { type Request, type Response, type NextFunction } from 'express';
 
-
-import { NODE_ENV } from '../config/index.js';
+import { NODE_ENV } from '../config/env.js';
 import { HTTP_ERROR_MESSAGES, HTTP_STATUS } from '@/constants/http.constants.js';
 
 export const errorHandler = (err: Error, _req: Request, res: Response, _next: NextFunction): void => {

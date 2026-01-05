@@ -4,16 +4,25 @@
 
 import { randomUUID } from 'crypto';
 
-import { type DeviceType } from '@/constants/auth.constants.js';
-import { type StakeholderType } from '@/constants/auth.constants.js';
-
+import { type DeviceType, type StakeholderType, SESSION_LIMIT, SESSION_TTL } from '@/constants/auth.constants.js';
 import { getRedis } from '../db/index.js';
 import { type ISession } from '@/lib/interfaces/auth.interfaces.js';
-import { SESSION_LIMIT, SESSION_TTL } from '@/constants/auth.constants.js';
 
 // Redis key builders
 const sessionKey = (role: StakeholderType, userId: string, sessionId: string): string => `session:${role}:${userId}:${sessionId}`;
 const sessionPattern = (role: StakeholderType, userId: string): string => `session:${role}:${userId}:*`;
+
+// Scan for keys matching pattern (non-blocking, production-safe)
+const scanKeys = async (pattern: string): Promise<Array<string>> => {
+    const redis = getRedis();
+    const keys: Array<string> = [];
+    for await (const key of redis.scanIterator({ MATCH: pattern, COUNT: 100 })) {
+        if (typeof key === 'string') {
+            keys.push(key);
+        }
+    }
+    return keys;
+};
 
 // Create new session, returns conflict info if limit exceeded
 export const createSession = async (
@@ -48,21 +57,21 @@ export const createSession = async (
     return { session, limitExceeded, activeSessions };
 };
 
-// Get all active sessions for user using SCAN
+// Get all active sessions for user using SCAN + MGET
 export const getActiveSessions = async (userId: string, role: StakeholderType): Promise<Array<ISession>> => {
     const redis = getRedis();
-    const keys = await redis.keys(sessionPattern(role, userId));
+    const keys = await scanKeys(sessionPattern(role, userId));
 
     if (keys.length === 0) return [];
 
-    const sessions = await Promise.all(
-        keys.map(async (key) => {
-            const data = await redis.get(key);
-            return data && typeof data === 'string' ? (JSON.parse(data) as ISession) : null;
-        }),
-    );
+    // Use MGET for batch retrieval (single round-trip)
+    const values = await redis.mGet(keys);
 
-    return sessions.filter((s): s is ISession => s !== null).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sessions = values
+        .filter((data): data is string => data !== null)
+        .map((data) => JSON.parse(data) as ISession);
+
+    return sessions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 };
 
 // Validate session exists and is active
@@ -80,14 +89,13 @@ export const invalidateSession = async (sessionId: string, userId: string, role:
 // Update session TTL (refresh expiry without reading/writing full data)
 export const updateSessionActivity = async (sessionId: string, userId: string, role: StakeholderType): Promise<void> => {
     const redis = getRedis();
-    // Single EXPIRE command - much faster than GET + parse + SET
     await redis.expire(sessionKey(role, userId, sessionId), SESSION_TTL);
 };
 
 // Invalidate all sessions for user (logout everywhere)
 export const invalidateAllSessions = async (userId: string, role: StakeholderType): Promise<void> => {
     const redis = getRedis();
-    const keys = await redis.keys(sessionPattern(role, userId));
+    const keys = await scanKeys(sessionPattern(role, userId));
 
     if (keys.length > 0) {
         await redis.del(keys);

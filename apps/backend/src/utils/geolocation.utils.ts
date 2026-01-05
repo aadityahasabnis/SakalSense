@@ -1,16 +1,9 @@
 // =============================================
-// IP Geolocation Utilities
+// IP Utilities - Fast IP detection without external APIs
 // =============================================
 
-interface GeoResponse {
-    status: 'success' | 'fail';
-    country?: string;
-    city?: string;
-    regionName?: string;
-    query?: string;
-}
-
-const isLocalIP = (ip: string): boolean => {
+// isLocalIP: Checks if IP is a local/private address
+export const isLocalIP = (ip: string): boolean => {
     return (
         ip === '::1' ||
         ip === '127.0.0.1' ||
@@ -27,46 +20,21 @@ const isLocalIP = (ip: string): boolean => {
     );
 };
 
-export const getPublicIP = async (): Promise<string | null> => {
-    try {
-        const response = await fetch('http://ip-api.com/json/?fields=query', {
-            signal: AbortSignal.timeout(3000),
-        });
-        if (!response.ok) return null;
-        const data = (await response.json()) as { query?: string };
-        return data.query ?? null;
-    } catch {
-        return null;
-    }
+// getClientIP: Extracts real client IP, prioritizing proxy headers
+// Production: nginx/load-balancer should set X-Real-IP or X-Forwarded-For
+export const getClientIP = (ip: string): string => {
+    // Clean up IPv6 localhost
+    if (ip === '::1') return '127.0.0.1';
+    // Remove IPv6 prefix if present
+    if (ip.startsWith('::ffff:')) return ip.slice(7);
+    return ip;
 };
 
-export const resolveClientIP = async (detectedIP: string): Promise<string> => {
-    if (isLocalIP(detectedIP)) {
-        const publicIP = await getPublicIP();
-        return publicIP ?? detectedIP;
-    }
-    return detectedIP;
-};
-
-export const getLocationFromIP = async (ip: string): Promise<string | null> => {
-    const resolvedIP = isLocalIP(ip) ? await getPublicIP() : ip;
-    if (!resolvedIP) return null;
-
-    try {
-        const response = await fetch(`http://ip-api.com/json/${resolvedIP}?fields=status,country,city,regionName`, {
-            signal: AbortSignal.timeout(3000),
-        });
-
-        if (!response.ok) return null;
-
-        const data = (await response.json()) as GeoResponse;
-
-        if (data.status === 'success' && data.city && data.country) {
-            return `${data.city}, ${data.country}`;
-        }
-
-        return null;
-    } catch {
-        return null;
-    }
+// getLocationLabel: Returns simple location label without external API
+// In production, consider using a local IP-to-location database (MaxMind GeoLite2)
+export const getLocationLabel = (ip: string): string | null => {
+    if (isLocalIP(ip)) return 'Local Network';
+    // Without external API, we can't determine location
+    // Return null - location field will be empty but login will be fast
+    return null;
 };

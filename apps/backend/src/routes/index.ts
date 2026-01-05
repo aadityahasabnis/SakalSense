@@ -6,7 +6,7 @@ import { Router, type Router as IRouter } from 'express';
 
 import { authRouter } from './auth/index.js';
 import { healthRouter } from './health/health.route.js';
-import { mailRouter } from './mail/index.js';
+import { mailRouter } from './mail/mail.routes.js';
 
 export const apiRouter: IRouter = Router();
 

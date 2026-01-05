@@ -10,7 +10,7 @@ import { redirect } from 'next/navigation';
 import { type HttpMethodType, type IApiResponse } from './interfaces';
 
 import { API_URL, IS_DEVELOPMENT } from '@/env';
-import { type FormDataType } from '@/types/common.types';
+import { type IFormData } from '@/types/common.types';
 import { createAbortController, formDataToJson, getErrorMessage, isAbortError, logApiCall } from '@/utils/api.utils';
 
 // =============================================
@@ -50,7 +50,7 @@ class RedirectError extends Error {
 // Main API Call Function
 // =============================================
 
-export const apiCall = async <TData = FormDataType>(props: IApiCallProps): Promise<IApiResponse<TData>> => {
+export const apiCall = async <TData = IFormData>(props: IApiCallProps): Promise<IApiResponse<TData>> => {
     const start = Date.now();
     const { method, url, authToken: customAuthToken } = props;
 

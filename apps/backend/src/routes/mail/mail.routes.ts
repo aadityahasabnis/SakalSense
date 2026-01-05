@@ -4,7 +4,7 @@
 
 import { Router, type Router as IRouter } from 'express';
 
-import { sendTestMailController, getMailLogsController, getMailStatsController } from '@/controllers/mail/index.js';
+import { sendTestMailController, getMailLogsController, getMailStatsController } from '@/controllers/mail/mail.controller.js';
 import { asyncHandler, authenticateAdministrator } from '@/middlewares/index.js';
 
 const router: IRouter = Router();

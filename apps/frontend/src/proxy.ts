@@ -7,7 +7,7 @@ import { AUTH_COOKIE, type STAKEHOLDER } from './constants/auth.constants';
 // All other routes are protected by default
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PUBLIC_ROUTES = ['/login', '/login/admin', '/login/administrator', '/register', '/register/admin', '/forgot-password', '/forgot-password/admin', '/forgot-password/administrator', '/reset-password'] as const;
+const PUBLIC_ROUTES = ['/login', '/login/admin', '/login/administrator', '/register', '/register/admin', '/forgot-password', '/forgot-password/admin', '/forgot-password/administrator', '/reset-password', '/test'] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper Functions

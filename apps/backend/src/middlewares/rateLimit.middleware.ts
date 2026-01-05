@@ -1,25 +1,29 @@
 // =============================================
-// Rate Limit Middleware - Factory pattern for route-level rate limiting
+// Rate Limit Middleware - Express middleware factory for route-level rate limiting
 // =============================================
 
 import { type Request, type Response, type NextFunction, type RequestHandler } from 'express';
 
 import { consumeRateLimit, type IRateLimitConfig } from '@/services/rateLimit.service.js';
-import {
-    RATE_LIMIT_WINDOW_MS,
-    RATE_LIMIT_MAX_REQUESTS,
-    RATE_LIMIT_STRICT_WINDOW_MS,
-    RATE_LIMIT_STRICT_MAX_REQUESTS,
-    RATE_LIMIT_AUTH_WINDOW_MS,
-    RATE_LIMIT_AUTH_MAX_REQUESTS,
-} from '@/constants/rateLimit.constants.js';
+import { RATE_LIMIT_STANDARD, RATE_LIMIT_STRICT, RATE_LIMIT_AUTH } from '@/constants/rateLimit.constants.js';
 import { HTTP_STATUS } from '@/constants/http.constants.js';
 import { getClientIP } from '@/utils/device.utils.js';
 
-// Factory: creates rate limit middleware with custom config
-export const rateLimit = (config: IRateLimitConfig, keyFn: (req: Request) => string = getClientIP): RequestHandler => {
+// =============================================
+// Middleware Factory
+// =============================================
+
+type KeyExtractor = (req: Request) => string;
+
+/**
+ * Creates a rate limit middleware with custom configuration
+ * @param config - Rate limit configuration (windowMs, maxRequests)
+ * @param keyFn - Function to extract identifier from request (default: client IP)
+ */
+export const rateLimit = (config: IRateLimitConfig, keyFn: KeyExtractor = getClientIP): RequestHandler => {
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-        const result = await consumeRateLimit(keyFn(req), config);
+        const identifier = keyFn(req);
+        const result = await consumeRateLimit(identifier, config);
 
         // Set standard rate limit headers
         res.setHeader('X-RateLimit-Limit', config.maxRequests);
@@ -40,7 +44,15 @@ export const rateLimit = (config: IRateLimitConfig, keyFn: (req: Request) => str
     };
 };
 
-// Pre-configured middlewares
-export const rateLimitStandard: RequestHandler = rateLimit({ windowMs: RATE_LIMIT_WINDOW_MS, maxRequests: RATE_LIMIT_MAX_REQUESTS });
-export const rateLimitStrict: RequestHandler = rateLimit({ windowMs: RATE_LIMIT_STRICT_WINDOW_MS, maxRequests: RATE_LIMIT_STRICT_MAX_REQUESTS });
-export const rateLimitAuth: RequestHandler = rateLimit({ windowMs: RATE_LIMIT_AUTH_WINDOW_MS, maxRequests: RATE_LIMIT_AUTH_MAX_REQUESTS });
+// =============================================
+// Pre-configured Middlewares
+// =============================================
+
+/** Standard rate limit: 100 req/min - general API endpoints */
+export const rateLimitStandard: RequestHandler = rateLimit(RATE_LIMIT_STANDARD);
+
+/** Strict rate limit: 10 req/min - sensitive endpoints */
+export const rateLimitStrict: RequestHandler = rateLimit(RATE_LIMIT_STRICT);
+
+/** Auth rate limit: 5 req/5min - brute-force protection for login */
+export const rateLimitAuth: RequestHandler = rateLimit(RATE_LIMIT_AUTH);

@@ -4,7 +4,7 @@
 
 import mongoose from 'mongoose';
 
-import { DATABASE_URL, NODE_ENV } from '../config/index.js';
+import { DATABASE_URL, NODE_ENV } from '../config/env.js';
 
 // connectMongoDB: Establishes MongoDB connection with environment-aware pool sizing
 // Production uses larger pool (100) for high concurrency, dev uses smaller pool (10)

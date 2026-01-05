@@ -28,7 +28,8 @@ const sanitizeBody = (body: unknown): unknown => {
     return sanitized;
 };
 
-// Extract stakeholder from JWT cookies
+// Extract authenticated stakeholder from JWT cookies
+// Returns null for anonymous/unauthenticated requests (login, register, etc.)
 const extractStakeholder = (req: Request): { type: IDebugLogEntry['stakeholder']; id: string | null } | null => {
     const cookies = req.cookies || {};
 

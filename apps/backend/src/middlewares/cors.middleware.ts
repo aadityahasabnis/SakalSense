@@ -4,7 +4,7 @@
 
 import cors from 'cors';
 
-import { CORS_ORIGINS } from '../config/index.js';
+import { CORS_ORIGINS } from '../config/env.js';
 
 // corsMiddleware: Pre-configured CORS middleware instance
 // origin: Function checks if request origin is in allowed list

@@ -8,7 +8,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 
 import { apiCall } from '@/lib/api';
 import { type IApiResponse } from '@/lib/interfaces';
-import { type FormDataType } from '@/types/common.types';
+import { type IFormData } from '@/types/common.types';
 
 // =============================================
 // Configuration
@@ -47,7 +47,7 @@ type InferQueryResult<TOptions, T> =
 // Hook Implementation
 // =============================================
 
-export const useAPIQuery = <T extends FormDataType = FormDataType, TOptions extends IWithFetcher<(...args: ReadonlyArray<never>) => Promise<unknown>> | IWithoutFetcher = IWithoutFetcher>(
+export const useAPIQuery = <T extends IFormData = IFormData, TOptions extends IWithFetcher<(...args: ReadonlyArray<never>) => Promise<unknown>> | IWithoutFetcher = IWithoutFetcher>(
     options: TOptions,
 ): InferQueryResult<TOptions, T> => {
     const { url, staleTime, gcTime, enabled = true } = options;
