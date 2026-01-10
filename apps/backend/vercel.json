@@ -1,7 +1,7 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "version": 2,
-    "installCommand": "corepack enable && corepack prepare pnpm@10.26.2 --activate && pnpm install --shamefully-hoist --no-frozen-lockfile --ignore-scripts=false",
+    "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.26.2 --activate && pnpm install --filter @sakalsense/backend --shamefully-hoist --no-frozen-lockfile",
     "buildCommand": "echo 'Serverless function ready'",
     "outputDirectory": ".",
     "rewrites": [
