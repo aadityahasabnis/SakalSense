@@ -1,19 +1,2 @@
-# Exclude source files from deployment
-
-src/
-api/handler.ts
-
-# Keep only the bundled output
-
-!api/index.js
-
-# Exclude build artifacts
-
+# Only exclude dist folder - let Vercel detect api/index.js after build
 dist/
-node_modules/
-
-# Exclude config files
-
-tsconfig.json
-tsup.config.ts
-eslint.config.js
