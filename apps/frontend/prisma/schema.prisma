@@ -1,0 +1,81 @@
+// =============================================
+// Prisma Schema - PostgreSQL Database Models
+// =============================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================
+// Stakeholder Models (3-Level Architecture)
+// =============================================
+
+// User: End users - public registration, 1 session limit
+model User {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  fullName   String
+  mobile     String?
+  avatarLink String?
+  isActive   Boolean  @default(true)
+  isVerified Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+// Admin: Invite-only managers - 2 session limit
+model Admin {
+  id          String         @id @default(uuid())
+  email       String         @unique
+  password    String
+  fullName    String
+  avatarLink  String?
+  invitedById String?
+  invitedBy   Administrator? @relation(fields: [invitedById], references: [id])
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([email])
+  @@map("admins")
+}
+
+// AdminInviteRequest: Pending admin invite requests
+model AdminInviteRequest {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  fullName  String
+  reason    String?
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@map("admin_invite_requests")
+}
+
+// Administrator: Super admins - seeded only, 2 session limit
+model Administrator {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  password   String
+  fullName   String
+  avatarLink String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  invitedAdmins Admin[]
+
+  @@index([email])
+  @@map("administrators")
+}

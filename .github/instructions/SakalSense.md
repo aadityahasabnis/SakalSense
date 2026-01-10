@@ -1,263 +1,280 @@
 # SakalSense Project Architecture
 
-> Professional monorepo structure for SakalSense application with Express backend, Next.js frontend, and shared TypeScript core.
+> Next.js monorepo with integrated PostgreSQL backend using Prisma Accelerate.
 
 ---
 
 ## Technology Stack
 
-| Layer        | Technology           | Language   |
-| ------------ | -------------------- | ---------- |
-| **Backend**  | Express.js           | TypeScript |
-| **Frontend** | Next.js (App Router) | TSX / TS   |
-| **Core**     | Shared Package       | TypeScript |
-| **Database** | MongoDB + Redis      | -          |
+| Layer              | Technology                  | Purpose                           |
+| ------------------ | --------------------------- | --------------------------------- |
+| **Frontend**       | Next.js 16 (App Router)     | UI + Server Components            |
+| **Backend**        | Server Actions + API Routes | Business Logic                    |
+| **Database**       | PostgreSQL + Prisma         | Data Persistence                  |
+| **Cache/Sessions** | Redis                       | Session Storage, Rate Limiting    |
+| **Performance**    | Prisma Accelerate           | Connection Pooling, Query Caching |
 
 ---
 
-## Monorepo Structure
+## Core Architecture
 
 ```
-SakalSense/
-├── apps/
-│   ├── backend/              # Express API server
-│   │   └── src/
-│   │       ├── config/       # Environment & configuration
-│   │       ├── constants/    # Backend-specific constants
-│   │       ├── controllers/  # Request handlers
-│   │       ├── db/           # Database connections
-│   │       ├── interfaces/   # Backend-specific interfaces
-│   │       ├── middlewares/  # Express middlewares
-│   │       ├── models/       # Mongoose models
-│   │       ├── routes/       # API routes
-│   │       ├── schemas/      # Zod validation schemas
-│   │       ├── services/     # Business logic
-│   │       └── utils/        # Backend utilities
+apps/frontend/
+├── src/
+│   ├── app/                      # Next.js App Router
+│   │   ├── (authenticated)/      # Protected routes
+│   │   ├── (unAuth)/             # Public routes
+│   │   └── api/                  # API Routes (public endpoints)
+│   │       └── auth/             # Auth endpoints
 │   │
-│   └── frontend/             # Next.js application
-│       └── src/
-│           ├── app/          # App Router pages
-│           ├── components/   # React components
-│           ├── hooks/        # Custom hooks
-│           ├── lib/          # Utilities
-│           └── styles/       # CSS/Tailwind
+│   ├── server/                   # Server-side code
+│   │   ├── actions/              # Server Actions
+│   │   │   ├── auth/             # Auth actions
+│   │   │   └── admin/            # Admin actions
+│   │   └── db/                   # Database layer
+│   │       ├── prisma.ts         # Prisma client
+│   │       └── redis.ts          # Redis client
+│   │
+│   ├── lib/                      # Shared utilities
+│   │   ├── auth/                 # Auth helpers (JWT, passwords)
+│   │   ├── mail/                 # Email service
+│   │   ├── rate-limit/           # Rate limiting
+│   │   └── interfaces/           # Type definitions
+│   │
+│   ├── constants/                # Application constants
+│   │   ├── auth.constants.ts
+│   │   ├── http.constants.ts
+│   │   └── paths/
+│   │
+│   ├── types/                    # TypeScript types
+│   └── components/               # React components
 │
-└── packages/
-    └── core/                 # Shared TypeScript package
-        └── src/
-            ├── constants/    # Shared constants
-            ├── interfaces/   # Shared interfaces
-            ├── schemas/      # Shared Zod schemas
-            ├── types/        # Shared type definitions
-            └── utils/        # Shared utility functions
+├── prisma/
+│   └── schema.prisma             # Database schema
+│
+└── scripts/                      # CLI utilities
 ```
 
 ---
 
-## Package Responsibilities
+## Stakeholder Architecture (3-Level)
 
-### `@sakalsense/core` (packages/core)
+| Role              | Description  | Registration  | Session Limit |
+| ----------------- | ------------ | ------------- | ------------- |
+| **USER**          | End users    | Public signup | 1 concurrent  |
+| **ADMIN**         | Managers     | Invite-only   | 2 concurrent  |
+| **ADMINISTRATOR** | Super admins | Seeded only   | 2 concurrent  |
 
-Framework-agnostic shared code used by **both** frontend and backend:
+### Database Models
 
-- **Constants**: Application-wide constants (roles, statuses, limits)
-- **Interfaces**: Shared data structures (User, Response types)
-- **Types**: Type aliases and utility types
-- **Schemas**: Zod validation schemas (reusable validation)
-- **Utils**: Pure utility functions (formatters, validators)
+```prisma
+model User {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  fullName    String
+  mobile      String?
+  avatarLink  String?
+  isActive    Boolean  @default(true)
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("users")
+}
 
-```typescript
-// Frontend import
-import { USER_ROLES, formatCurrency } from '@sakalsense/core';
+model Admin {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  fullName    String
+  avatarLink  String?
+  invitedById String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("admins")
+}
 
-// Backend import (includes server-only utilities)
-import { generateToken } from '@sakalsense/core/server';
-```
-
-### `@sakalsense/backend` (apps/backend)
-
-Express API server with:
-
-- **Config**: Type-safe environment variable management
-- **Controllers**: Request/response handling
-- **DB**: MongoDB and Redis connections
-- **Middlewares**: Auth, CORS, error handling, logging
-- **Models**: Mongoose schemas and models
-- **Routes**: API endpoint definitions
-- **Services**: Business logic layer
-- **Schemas**: Request validation schemas
-
-### `@sakalsense/frontend` (apps/frontend)
-
-Next.js 14+ application with:
-
-- **App Router**: File-based routing
-- **Server Components**: Default rendering strategy
-- **Client Components**: Interactive UI elements
-- **Server Actions**: Form handling and mutations
-
----
-
-## Architecture Principles
-
-### 1. No Hardcoded Values
-
-All configuration must be imported from dedicated sources:
-
-```typescript
-// ✅ GOOD: Import from env.ts
-import { ENV } from '@/config/env';
-const port = ENV.PORT;
-
-// ✅ GOOD: Import constants
-import { MAX_FILE_SIZE } from '@sakalsense/core';
-
-// ❌ BAD: Hardcoded value
-const port = 8000;
-```
-
-### 2. Type-Safe Environment Variables
-
-All environment variables exported from `config/env.ts`:
-
-```typescript
-// config/env.ts
-export const ENV = {
-  NODE_ENV: process.env.NODE_ENV ?? 'development',
-  PORT: Number(process.env.PORT) || 8000,
-  MONGODB_URI: process.env.MONGODB_URI!,
-  REDIS_HOST: process.env.REDIS_HOST ?? 'localhost',
-  JWT_SECRET: process.env.JWT_SECRET!,
-} as const;
-```
-
-### 3. Constants Always Imported
-
-Constants must be defined in dedicated files and imported:
-
-```typescript
-// @sakalsense/core/constants/limits.ts
-export const LIMITS = {
-  MAX_FILE_SIZE: 5 * 1024 * 1024,
-  MAX_UPLOAD_COUNT: 10,
-  PAGINATION_DEFAULT: 20,
-} as const;
-
-// Usage in any file
-import { LIMITS } from '@sakalsense/core';
-if (file.size > LIMITS.MAX_FILE_SIZE) { ... }
-```
-
-### 4. Separation of Concerns
-
-```
-Request → Route → Controller → Service → Model → Database
-              ↓
-         Middleware
-              ↓
-         Response
-```
-
-| Layer          | Responsibility                             |
-| -------------- | ------------------------------------------ |
-| **Route**      | Define endpoints, apply middlewares        |
-| **Controller** | Parse request, call service, send response |
-| **Service**    | Business logic, validation                 |
-| **Model**      | Data persistence, schema definition        |
-
-### 5. Error Handling
-
-Centralized error handling with consistent response format:
-
-```typescript
-// All async routes wrapped
-router.get(
-  '/users',
-  asyncHandler(async (req, res) => {
-    const users = await userService.getAll();
-    res.json({ success: true, data: users });
-  }),
-);
-
-// Global error handler catches all errors
-app.use(errorHandler);
+model Administrator {
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  fullName    String
+  avatarLink  String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@map("administrators")
+}
 ```
 
 ---
 
-## Database Architecture
+## API Strategy
 
-### MongoDB (Primary Database)
+### API Routes (Public Endpoints)
 
-- Document storage for application data
-- Mongoose ODM for schema definition
-- Connection management via `db/mongodb.ts`
+Located in `app/api/` for:
 
-### Redis (Caching & Sessions)
+- Authentication (login, register, logout)
+- Password reset flows
+- Webhooks
+- Health checks
 
-- Session storage
-- API response caching
-- Rate limiting data
-- Connection management via `db/redis.ts`
+```
+app/api/
+├── auth/
+│   ├── login/route.ts
+│   ├── register/route.ts
+│   ├── logout/route.ts
+│   ├── forgot-password/route.ts
+│   └── reset-password/route.ts
+├── health/route.ts
+└── mail/
+    └── test/route.ts
+```
+
+### Server Actions (Authenticated Operations)
+
+Located in `server/actions/` for:
+
+- Data mutations
+- Protected operations
+- Internal API calls
+
+```
+server/actions/
+├── auth/
+│   ├── session.actions.ts
+│   └── password.actions.ts
+├── admin/
+│   └── users.actions.ts
+└── mail/
+    └── index.ts
+```
+
+---
+
+## Session Management
+
+Sessions stored in Redis with:
+
+- **Pattern**: `session:{role}:{userId}:{sessionId}`
+- **TTL**: 15 days
+- **Limit**: Role-based concurrent session limits
+
+### Session Flow
+
+```
+Login → Create Session (Redis) → Generate JWT → Set Cookie
+  ↓
+Request → Verify JWT → Validate Session (Redis) → Process
+  ↓
+Logout → Invalidate Session (Redis) → Clear Cookie
+```
+
+---
+
+## Rate Limiting
+
+Sliding window algorithm with Redis Sorted Sets:
+
+| Tier     | Window | Max Requests | Use Case             |
+| -------- | ------ | ------------ | -------------------- |
+| Standard | 1 min  | 100          | General API          |
+| Strict   | 1 min  | 10           | Sensitive operations |
+| Auth     | 5 min  | 5            | Login attempts       |
 
 ---
 
 ## Environment Variables
 
-All environment variables documented in `.env.example`:
-
 ```env
-# Server
-PORT=8000
-NODE_ENV=development
-
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017/sakalsense
+# Database
+DATABASE_URL="prisma://accelerate.prisma-data.net/?api_key=..."
+DIRECT_URL="postgresql://user:pass@host:5432/sakalsense"
 
 # Redis
 REDIS_HOST=localhost
 REDIS_PORT=6379
+REDIS_USERNAME=default
 REDIS_PASSWORD=
 
 # JWT
 JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=7d
 
-# CORS
-CORS_ORIGIN=http://localhost:3000
+# Email
+GMAIL_ACCOUNT=your-email@gmail.com
+GMAIL_PASSWORD=your-app-password
 ```
 
 ---
 
-## Import Conventions
+## Development Workflow
 
-### Frontend (Next.js)
+```bash
+# Install dependencies
+pnpm install
 
-```typescript
-// Default core import
-import { formatDate, USER_ROLES } from '@sakalsense/core';
+# Run development server
+pnpm dev
 
-// NEVER import server-only code in frontend
-// ❌ import { generateToken } from '@sakalsense/core/server';
+# Generate Prisma client
+npx prisma generate
+
+# Run migrations
+npx prisma migrate dev
+
+# Build for production
+pnpm build
 ```
 
-### Backend (Express)
+---
+
+## Key Patterns
+
+### No Hardcoded Values
 
 ```typescript
-// Core import
-import { formatDate, USER_ROLES } from '@sakalsense/core';
+// ✅ GOOD
+import { SESSION_CONFIG } from '@/constants/auth.constants';
+const ttl = SESSION_CONFIG.TTL;
 
-// Server-only import (allowed in backend only)
-import { generateToken, verifyToken } from '@sakalsense/core/server';
+// ❌ BAD
+const ttl = 1296000;
+```
+
+### Type-Safe Constants
+
+```typescript
+export const STAKEHOLDER = {
+    USER: 'USER',
+    ADMIN: 'ADMIN',
+    ADMINISTRATOR: 'ADMINISTRATOR',
+} as const;
+
+export type StakeholderType = (typeof STAKEHOLDER)[keyof typeof STAKEHOLDER];
+```
+
+### Consistent Response Format
+
+```typescript
+interface IApiResponse<TData = unknown> {
+    success: boolean;
+    data?: TData;
+    error?: string;
+    message?: string;
+}
 ```
 
 ---
 
 ## Code Standards
 
-- **TypeScript Only**: No JavaScript files
-- **Arrow Functions**: No `function` declarations
-- **Explicit Types**: Return types for all exports
-- **No `any`**: Use `unknown` with type guards
-- **Const Assertions**: Use `as const` for literal types
-- **Single Responsibility**: One purpose per file/function
+- **TypeScript Only** — No JavaScript files
+- **Arrow Functions** — No `function` declarations
+- **Explicit Types** — Return types for all exports
+- **No `any`** — Use `unknown` with type guards
+- **Const Assertions** — Use `as const` for literal types
+- **Single Responsibility** — One purpose per file/function
+- **Max 300 Lines** — Split larger files

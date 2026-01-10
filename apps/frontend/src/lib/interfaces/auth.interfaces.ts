@@ -8,7 +8,7 @@ import { type DeviceType, type StakeholderType } from '@/types/auth.types';
 export interface IJWTPayload {
     userId: string;
     fullName: string;
-    avatarLink: string | null;
+    avatarLink?: string;
     role: StakeholderType;
     sessionId: string;
 }
@@ -20,7 +20,7 @@ export interface ISession {
     role: StakeholderType;
     device: DeviceType;
     ip: string;
-    location: string | null;
+    location?: string;
     userAgent: string;
     createdAt: string;
     lastActiveAt: string;
@@ -30,12 +30,20 @@ export interface ISession {
 export interface ILoginRequest {
     email: string;
     password: string;
-    [key: string]: unknown;
+    stakeholder: StakeholderType;
+}
+
+// Login user data
+export interface ILoginUserData {
+    id: string;
+    fullName: string;
+    email: string;
+    avatarLink?: string;
 }
 
 // Login response with optional session conflict data
 export interface ILoginResponse {
-    user?: { id: string; fullName: string; email: string; avatarLink: string | null };
+    user?: ILoginUserData;
     sessionLimitExceeded?: boolean;
     activeSessions?: Array<ISession>;
 }
@@ -46,7 +54,6 @@ export interface IUserRegisterRequest {
     email: string;
     password: string;
     mobile?: string;
-    [key: string]: unknown;
 }
 
 // Admin registration (invite-only)
@@ -55,11 +62,22 @@ export interface IAdminRegisterRequest {
     email: string;
     password: string;
     inviteCode: string;
-    [key: string]: unknown;
 }
 
 // Update password request (authenticated)
 export interface IUpdatePasswordRequest {
     currentPassword: string;
+    newPassword: string;
+}
+
+// Forgot password request
+export interface IForgotPasswordRequest {
+    email: string;
+    stakeholder: StakeholderType;
+}
+
+// Reset password request
+export interface IResetPasswordRequest {
+    token: string;
     newPassword: string;
 }

@@ -1,676 +1,453 @@
 # SakalSense Copilot Instructions (Professional Developer Guide)
 
-## Purpose
+## Architecture Overview
 
-Canonical guide for AI-assisted development. Enforces architecture, code quality, and maintainability standards across the monorepo. Every line of code must be optimized, concise, and production-ready.
+Next.js 16 app with PostgreSQL (Prisma Accelerate), Redis, and React Query (TanStack). App Router with Server Actions and API Routes pattern.
 
----
-
-## Monorepo Architecture Rules
-
-### Package Structure
-
-- `apps/frontend` → Next.js App Router (TypeScript only). Import `@sakalsense/core` default export only
-- `apps/backend` → Express server (TypeScript only). May import `@sakalsense/core/server`
-- `packages/core` → Framework-agnostic shared package. Pure TypeScript: types, interfaces, constants, utils
-     - Server-only code: `packages/core/src/server`, exported via `package.json` subpath `"./server"`
-
-### Dependency Management
-
-- Use `workspace:*` for all internal packages. Never reference npm registry during development
-- Frontend **MUST NOT** import server-only exports
-- Backend **MAY** import from `@sakalsense/core/server`
-- No circular dependencies allowed between packages
-
----
-
-## TypeScript Standards
-
-### Configuration
-
-- All packages extend `tsconfig.base.json` from `@tsconfig/node-lts-strictest` [web:9]
-- Zero JavaScript files allowed — TypeScript only
-- Each package requires `type-check` script: `tsc --noEmit`
-- Enable `incremental: true` for cached compilation
-
-### Type Safety Rules
-
-- Explicit return types required for all exported functions
-- No `any` types — use `unknown` with type guards
-- Prefer `interface` over `type` for object shapes
-- Use inline type imports: `import { type User } from './types'`
-- Array types: prefer generic syntax `Array<T>` over `T[]`
-- Enable readonly modifiers where applicable
-
-### Code Style
-
-- Strict null checks enforced
-- Prefer nullish coalescing (`??`) over logical OR
-- Use optional chaining (`?.`) for safe property access
-- No floating promises — always handle with `await` or `.catch()`
-
----
-
-## ESLint Configuration
-
-### Flat Config Standards [web:1][web:3]
-
-- Use modern flat config format (ESLint 9+)
-- Each app/package owns its configuration
-- Root config must not apply global rules
-- Explicit plugin imports — no implicit loading
-
-### Core Rules (All Packages)
-
-**Modern JavaScript**
-
-- `no-var`: error — use `const` or `let`
-- `prefer-const`: error — immutability first
-- `eqeqeq`: error — strict equality only
-- `object-shorthand`: error — concise syntax
-- `prefer-arrow-callback`: error — no function expressions
-
-**Forbidden Patterns**
-
-- No `function` declarations — arrow functions only
-- No `for...in`, `for...of`, `while`, `do...while` loops — use functional iteration
-- No duplicate imports
-- No multiple empty lines (max: 1)
-
-**Import Organization** [web:2]
-
-- Groups: builtin → external → internal → parent → sibling → index → types
-- Alphabetized within groups (case-insensitive)
-- Newline between groups
-- Inline type imports required: `import { type T } from 'mod'`
-- React/Next.js imports first in frontend
-
-**Formatting**
-
-- Single quotes (allow escaping)
-- Semicolons required
-- No trailing spaces
-- Single newline at end of file
-
-### Frontend-Specific (Next.js)
-
-**React Rules**
-
-- Hooks rules enforced
-- No useless fragments (allow expressions)
-- Self-closing components required
-- Curly braces only when necessary: `<div className={val}>`
-- Arrow function components only: `const Component = () => { }`
-- No target="\_blank" without `rel="noopener noreferrer"`
-
-**Tailwind CSS** [web:7]
-
-- Utility-first approach enforced
-- All classnames in single line
-- No custom classname warnings (off)
-- Use latest Tailwind utilities for layouts (flex, grid)
-- Prefer utility classes over custom CSS
-
-### Backend/Core-Specific
-
-- Node.js + TypeScript rules only
-- No React-specific rules
-- Server-safe code patterns enforced
-
----
-
-## Next.js App Router Best Practices (apps/frontend)
-
-### Server vs Client Components
-
-**Default to Server Components** — Only use Client Components when absolutely necessary:
-
-- Server Component (default): async data fetching, database access, backend APIs
-- Client Component (`'use client'`): interactivity, hooks, browser APIs, event handlers
-
-### Server Component Rules
-
-```typescript
-// ✅ GOOD: Server Component with async data fetching
-export default async function Page({ params }: { params: Promise<{ id: string }> }) => {
-  const { id } = await params;
-  const user = await fetchUser(id); // Direct database/API call
-  return <UserProfile user={user} />;
-};
-
-// ✅ GOOD: Using Suspense for streaming
-export default async function Dashboard() => (
-  <Suspense fallback={<Skeleton />}>
-    <AsyncData />
-  </Suspense>
-);
 ```
-
-### Client Component Rules
-
-```typescript
-// ✅ GOOD: Minimal Client Component for interactivity
-'use client';
-
-export const Counter = () => {
-  const [count, setCount] = useState(0);
-  return <button onClick={() => setCount((c) => c + 1)}>{count}</button>;
-};
-
-// ❌ BAD: Entire page as Client Component
-'use client';
-export default function Page() => { /* Don't do this */ };
-```
-
-### Server Actions (Form Handling)
-
-```typescript
-// ✅ GOOD: Server Action in separate file
-'use server';
-
-export const createUser = async (formData: FormData): Promise<{ success: boolean }> => {
-  const name = formData.get('name') as string;
-  await db.users.insert({ name });
-  revalidatePath('/users');
-  return { success: true };
-};
-
-// ✅ GOOD: Using Server Action in Client Component
-'use client';
-
-export const UserForm = () => (
-  <form action={createUser}>
-    <input name="name" />
-    <button type="submit">Create</button>
-  </form>
-);
-```
-
-### Data Fetching Patterns
-
-```typescript
-// ✅ GOOD: Parallel data fetching in Server Component
-export default async function Page() => {
-  const [users, posts] = await Promise.all([
-    fetchUsers(),
-    fetchPosts(),
-  ]);
-  return <Dashboard users={users} posts={posts} />;
-};
-
-// ✅ GOOD: Streaming with Suspense boundaries
-export default async function Page() => (
-  <>
-    <Suspense fallback={<UsersSkeleton />}>
-      <Users />
-    </Suspense>
-    <Suspense fallback={<PostsSkeleton />}>
-      <Posts />
-    </Suspense>
-  </>
-);
-
-// ❌ BAD: Sequential fetching (waterfalls)
-const users = await fetchUsers();
-const posts = await fetchPosts(); // Waits for users
-```
-
-### Route Handlers (API Routes)
-
-```typescript
-// ✅ GOOD: Optimized GET route with caching
-export const GET = async (req: Request): Promise<Response> => {
-	const users = await db.users.findMany();
-	return Response.json(users, {
-		headers: { 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
-	});
-};
-
-// ✅ GOOD: POST with validation
-export const POST = async (req: Request): Promise<Response> => {
-	const body = await req.json();
-	const validated = UserSchema.parse(body); // Zod validation
-	const user = await db.users.create({ data: validated });
-	return Response.json(user, { status: 201 });
-};
-
-// ❌ BAD: No error handling
-export const POST = async (req: Request) => {
-	const user = await db.users.create({ data: await req.json() }); // Unsafe
-	return Response.json(user);
-};
-```
-
-### Metadata & SEO
-
-```typescript
-// ✅ GOOD: Dynamic metadata
-export const generateMetadata = async ({ params }: Props): Promise<Metadata> => ({
-	title: `User ${(await params).id}`,
-	description: 'User profile page',
-	openGraph: { images: ['/og-image.png'] },
-});
-
-// ✅ GOOD: Static metadata
-export const metadata: Metadata = {
-	title: 'Dashboard',
-	description: 'User dashboard',
-};
-```
-
-### Performance Optimization
-
-```typescript
-// ✅ GOOD: Image optimization
-import Image from 'next/image';
-<Image src="/hero.jpg" alt="Hero" width={800} height={600} priority />;
-
-// ✅ GOOD: Dynamic imports for heavy components
-const HeavyChart = dynamic(() => import('@/components/HeavyChart'), {
-  loading: () => <ChartSkeleton />,
-  ssr: false, // Client-side only
-});
-
-// ✅ GOOD: Font optimization
-import { Inter } from 'next/font/google';
-const inter = Inter({ subsets: ['latin'], display: 'swap' });
+apps/frontend/src/
+├── app/                     # App Router pages + API routes
+│   ├── (authenticated)/     # Protected routes with _components/
+│   └── api/                 # Public API routes (auth, webhooks)
+├── server/
+│   ├── actions/             # Server Actions (authenticated operations)
+│   ├── db/                  # Database connections (Prisma, Redis)
+│   └── schemas/             # Zod validation schemas
+├── lib/                     # Shared utilities
+│   ├── auth/                # JWT, passwords, sessions
+│   ├── mail/                # Email service
+│   ├── rate-limit/          # Rate limiting
+│   └── interfaces/          # Type definitions
+├── constants/               # Application constants
+├── components/              # Shared reusable components only
+├── hooks/                   # Custom hooks
+└── types/                   # TypeScript types
 ```
 
 ---
 
-## Backend Best Practices (apps/backend)
+## Code Quality Standards
 
-### Express Server Structure
+### File Size
+
+- **Maximum 300 lines per file** — Split into smaller, focused modules
+
+### Type Safety
+
+- **No loose types** — Always define explicit, strict types
+- **Never use `any`** — Use `unknown` with type guards
+- **No `@ts-ignore` or `eslint-disable`** — Fix the underlying issue
+- **No generic `<T>` names** — Use meaningful names: `<UserData>`, `<ResponsePayload>`
+
+### React Best Practices
+
+- **Avoid unnecessary `useEffect`** — Prefer derived state, event handlers, or useMemo/useCallback
+
+### Naming Conventions
+
+| Type                | Convention                     | Example                       |
+| ------------------- | ------------------------------ | ----------------------------- |
+| Components          | PascalCase                     | `UserProfile`, `LoginForm`    |
+| Page exports        | camelCase                      | `const page = async () => {}` |
+| Files (components)  | PascalCase                     | `UserCard.tsx`                |
+| Files (utilities)   | kebab-case                     | `date-utils.ts`               |
+| Interfaces          | `I` prefix                     | `IUserData`, `ILoginRequest`  |
+| Request interfaces  | `I` prefix + `Request` suffix  | `ILoginRequest`               |
+| Response interfaces | `I` prefix + `Response` suffix | `ILoginResponse`              |
+| Type aliases        | Descriptive + `Type` suffix    | `StakeholderType`             |
+| Constants           | UPPERCASE                      | `STAKEHOLDER`, `HTTP_STATUS`  |
+
+---
+
+## Project Structure
+
+### Server Actions (`/server/actions/`)
+
+- All server actions must reside in `/server/actions/` directory
+- Each action must have request/response interfaces defined **above** the function:
 
 ```typescript
-// ✅ GOOD: Modular route structure
-// src/routes/users.ts
-export const usersRouter = Router();
+// Interface naming: I + ActionName + Request/Response
+interface IGetUserRequest {
+    userId: string;
+}
 
-usersRouter.get('/', async (req, res) => {
-	const users = await UserService.getAll();
-	res.json(users);
-});
+interface IGetUserResponse {
+    success: boolean;
+    user?: IUserData;
+    error?: string;
+}
 
-usersRouter.post('/', async (req, res) => {
-	const user = await UserService.create(req.body);
-	res.status(201).json(user);
-});
+export const getUser = async (params: IGetUserRequest): Promise<IGetUserResponse> => {
+    // implementation
+};
 ```
 
-### Error Handling Middleware
+### API Routes (`/app/api/`)
+
+- Public endpoints (auth, webhooks) in `/app/api/`
+- Same interface pattern as server actions
 
 ```typescript
-// ✅ GOOD: Centralized error handler
-export const errorHandler = (err: Error, req: Request, res: Response, next: NextFunction): void => {
-	console.error(err.stack);
-	res.status(err instanceof ValidationError ? 400 : 500).json({
-		error: err.message,
-		...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-	});
+// app/api/auth/login/route.ts
+interface ILoginRequest {
+    email: string;
+    password: string;
+    stakeholder: StakeholderType;
+}
+
+interface ILoginResponse {
+    success: boolean;
+    data?: { user: IUserData };
+    error?: string;
+}
+
+export const POST = async (req: NextRequest): Promise<NextResponse<ILoginResponse>> => {
+    const body: ILoginRequest = await req.json();
+    // implementation
+};
+```
+
+### Database Layer (`/server/db/`)
+
+- Prisma client singleton with Accelerate
+- Redis client for sessions and caching
+
+```typescript
+// server/db/prisma.ts
+import { PrismaClient } from '@prisma/client';
+import { withAccelerate } from '@prisma/extension-accelerate';
+
+const prismaClientSingleton = () => new PrismaClient().$extends(withAccelerate());
+
+type PrismaClientType = ReturnType<typeof prismaClientSingleton>;
+
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClientType | undefined };
+
+export const prisma = globalForPrisma.prisma ?? prismaClientSingleton();
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+```
+
+### Schemas (`/server/schemas/`)
+
+- Schema files contain **ONLY**: types, interfaces, enums, and const arrays
+- **NO helper functions, utilities, or logic** in schema files
+- Move utilities to `/lib/` or `/utils/`
+
+### Components
+
+#### Page-Specific Components (`/app/*/_components/`)
+
+- Components used only by a specific page belong in `_components/` folder
+
+#### Shared Components (`/components/`)
+
+- Only **truly reusable** components used across multiple pages
+- Examples: `Button`, `Modal`, `DataTable`, `FormField`
+
+---
+
+## Code Patterns
+
+### Functions
+
+- **Always use arrow functions** throughout the codebase
+
+```typescript
+// ✅ Correct
+const handleClick = () => {};
+const Page = () => {};
+
+// ❌ Incorrect
+function handleClick() {}
+function Page() {}
+```
+
+### Exports
+
+- **JSX Components**: Export from bottom of file only
+- **Utility functions**: Inline exports are acceptable
+- **NO barrel exports (index.ts re-exports)** — Import directly from source
+- **NO re-exporting types** — Define types in their own file
+
+```typescript
+// ✅ Correct - Direct import
+import { UserCard } from './UserCard';
+import { formatDate } from '@/utils/date-utils';
+
+// ❌ Incorrect - Barrel export
+import { UserCard } from './components'; // index.ts re-export
+```
+
+### Page Files
+
+- Export **only** the page function
+- Use camelCase for the function name
+
+```typescript
+const page = async () => {
+  return <PageContent />;
 };
 
-// ✅ GOOD: Async route wrapper
-export const asyncHandler =
-	(fn: RequestHandler): RequestHandler =>
-	(req, res, next) =>
-		Promise.resolve(fn(req, res, next)).catch(next);
-
-// Usage
-router.get(
-	'/users',
-	asyncHandler(async (req, res) => {
-		const users = await db.users.findMany();
-		res.json(users);
-	}),
-);
+export default page;
 ```
 
-### Validation & Security
+---
+
+## API Strategy
+
+### When to Use API Routes
+
+- Authentication endpoints (login, register, logout)
+- Password reset flows
+- Webhooks and external integrations
+- Rate-limited public endpoints
+
+### When to Use Server Actions
+
+- Authenticated data mutations
+- Internal operations from protected pages
+- Data fetching in Server Components
 
 ```typescript
-// ✅ GOOD: Request validation
-import { z } from 'zod';
+// API Route (public, rate-limited)
+// app/api/auth/login/route.ts
+export const POST = async (req: NextRequest) => {
+    // Rate limiting
+    // Authentication
+    // Cookie setting
+};
 
-const CreateUserSchema = z.object({
-	email: z.string().email(),
-	name: z.string().min(2).max(100),
-});
-
-router.post(
-	'/users',
-	asyncHandler(async (req, res) => {
-		const data = CreateUserSchema.parse(req.body);
-		const user = await db.users.create({ data });
-		res.status(201).json(user);
-	}),
-);
-
-// ✅ GOOD: Rate limiting
-import rateLimit from 'express-rate-limit';
-
-const limiter = rateLimit({
-	windowMs: 15 * 60 * 1000, // 15 minutes
-	max: 100, // Max 100 requests per window
-});
-
-app.use('/api/', limiter);
+// Server Action (authenticated)
+// server/actions/auth/password.actions.ts
+export const updatePassword = async (params: IUpdatePasswordRequest) => {
+    // Already authenticated via cookie
+    // Direct database operation
+};
 ```
 
-### Database Queries
+---
+
+## Data Fetching & Caching
+
+### Use Established Patterns
 
 ```typescript
-// ✅ GOOD: Optimized query with relations
-const users = await db.user.findMany({
-	select: { id: true, email: true, profile: { select: { bio: true } } },
-	where: { active: true },
-	orderBy: { createdAt: 'desc' },
-	take: 20,
+// Client-side queries - use useAPIQuery hook
+const { data, isLoading } = useAPIQuery({ url: 'users', fetcher: getAllUsers });
+
+// Mutations with cache invalidation - use useAPIAction hook
+const { handleAction } = useAPIAction();
+await handleAction({
+    actionConfig: { customAction: () => updateUser(id, data) },
+    snackbarOptions: { loading: 'Updating...', success: 'Updated!' },
+    invalidateEndpoints: { customQueries: ['users'] },
+});
+```
+
+### Dialogs (Confirm/Form)
+
+```typescript
+const { confirmDialog, formDialog } = useDialog();
+confirmDialog({ title: 'Delete?', variant: 'destructive', onConfirm: () => deleteItem(id) });
+```
+
+---
+
+## Database Patterns
+
+### Prisma Queries
+
+```typescript
+// ✅ GOOD: Select only needed fields
+const users = await prisma.user.findMany({
+    select: { id: true, email: true, fullName: true },
+    where: { isActive: true },
 });
 
-// ✅ GOOD: Transaction handling
-const result = await db.$transaction(async (tx) => {
-	const user = await tx.user.create({ data: { email } });
-	await tx.profile.create({ data: { userId: user.id } });
-	return user;
+// ✅ GOOD: Include relations in single query
+const user = await prisma.user.findUnique({
+    where: { id },
+    include: { profile: true },
 });
 
 // ❌ BAD: N+1 query problem
-const users = await db.user.findMany();
-const usersWithPosts = await Promise.all(
-	users.map((u) => db.post.findMany({ where: { userId: u.id } })),
-);
+const users = await prisma.user.findMany();
+const profiles = await Promise.all(users.map((u) => prisma.profile.findUnique({ where: { userId: u.id } })));
 ```
 
-### API Response Standards
+### Redis Key Patterns
 
 ```typescript
-// ✅ GOOD: Consistent response format
-interface ApiResponse<T> {
-	data?: T;
-	error?: string;
-	meta?: { page: number; total: number };
-}
+// ✅ GOOD: Flat namespace
+const sessionKey = `session:${role}:${userId}:${sessionId}`;
+const rateLimitKey = `ratelimit:${sanitizedId}`;
 
-// ✅ GOOD: Pagination helper
-export const paginate = <T>(items: Array<T>, page: number, limit: number) => ({
-	data: items.slice((page - 1) * limit, page * limit),
-	meta: { page, limit, total: items.length, pages: Math.ceil(items.length / limit) },
-});
+// ❌ BAD: Nested paths (creates folder structure)
+const key = `session/${role}/${userId}`;
 ```
 
 ---
 
-## Core Package Best Practices (packages/core)
+## Authentication Architecture
 
-### Pure TypeScript Utilities
+### 3-Level Stakeholder Model
 
-```typescript
-// ✅ GOOD: Framework-agnostic helper
-export const formatCurrency = (amount: number, currency = 'USD'): string =>
-	new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+| Role          | Registration  | Session Limit |
+| ------------- | ------------- | ------------- |
+| USER          | Public signup | 1 concurrent  |
+| ADMIN         | Invite-only   | 2 concurrent  |
+| ADMINISTRATOR | Seeded only   | 2 concurrent  |
 
-// ✅ GOOD: Type-safe utility
-export const pick = <T extends object, K extends keyof T>(obj: T, keys: Array<K>): Pick<T, K> =>
-	keys.reduce((acc, key) => ({ ...acc, [key]: obj[key] }), {} as Pick<T, K>);
+### Session Flow
 
-// ✅ GOOD: Validation function
-export const isValidEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+```
+Login → Create Session (Redis) → Generate JWT → Set Cookie
+  ↓
+Request → Verify JWT → Validate Session (Redis) → Process
+  ↓
+Logout → Invalidate Session (Redis) → Clear Cookie
 ```
 
-### Shared Constants
+### JWT with Jose (Edge-Compatible)
 
 ```typescript
-// ✅ GOOD: Type-safe constants
-export const USER_ROLES = {
-	ADMIN: 'admin',
-	USER: 'user',
-	GUEST: 'guest',
-} as const;
+// lib/auth/jwt.ts
+import { SignJWT, jwtVerify } from 'jose';
 
-export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
-
-// ✅ GOOD: Configuration
-export const APP_CONFIG = {
-	MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
-	ALLOWED_FILE_TYPES: ['image/png', 'image/jpeg', 'image/webp'],
-	RATE_LIMIT: { WINDOW_MS: 15 * 60 * 1000, MAX_REQUESTS: 100 },
-} as const;
-```
-
-### Shared Types & Interfaces
-
-```typescript
-// ✅ GOOD: Domain types
-export interface User {
-	readonly id: string;
-	email: string;
-	name: string;
-	role: UserRole;
-	createdAt: Date;
-	updatedAt: Date;
-}
-
-export interface CreateUserInput {
-	email: string;
-	name: string;
-	role?: UserRole;
-}
-
-// ✅ GOOD: API response types
-export interface PaginatedResponse<T> {
-	data: Array<T>;
-	meta: {
-		page: number;
-		limit: number;
-		total: number;
-		pages: number;
-	};
-}
-```
-
-### Server-Only Utilities (packages/core/src/server)
-
-```typescript
-// ✅ GOOD: Server-only exports
-// packages/core/src/server/jwt.ts
-import jwt from 'jsonwebtoken';
-
-export const generateToken = (userId: string): string =>
-	jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '7d' });
-
-export const verifyToken = (token: string): { userId: string } =>
-	jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+export const signJWT = async (payload: IJWTPayload): Promise<string> =>
+    new SignJWT({ ...payload }).setProtectedHeader({ alg: 'HS256' }).setExpirationTime('15d').sign(new TextEncoder().encode(process.env.JWT_SECRET));
 ```
 
 ---
 
-## Code Optimization Principles
+## Constants Organization
 
-### Minimal Code, Maximum Value
+All constants in `src/constants/` with separate files:
 
-- Every line must serve a purpose — remove dead code immediately
-- Combine related logic into single expressions where readable
-- Prefer ternaries over if/else for simple conditionals
-- Use destructuring to reduce variable declarations
-- Chain array methods instead of multiple iterations
+```
+constants/
+├── auth.constants.ts       # Stakeholders, cookies, session config
+├── http.constants.ts       # HTTP status codes, error messages
+├── email.constants.ts      # Email configuration
+├── rate-limit.constants.ts # Rate limiting tiers
+└── paths/                  # Route paths
+```
 
-### Tailwind Optimization [web:7][web:10]
-
-- All classnames on one line: `className="flex items-center justify-between px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md"`
-- Use Tailwind's responsive prefixes: `md:`, `lg:`, `xl:`
-- Leverage utility combinations: `space-x-4`, `divide-y`
-- Prefer Tailwind utilities over custom CSS
-- Use `@apply` directive sparingly — only for true component patterns
-
-### Component Structure
-
-- Single responsibility per component
-- Export arrow functions: `export const Component = () => { }`
-- Inline simple props interfaces: `interface Props { ... }`
-- Keep JSX flat — extract nested logic to separate components
-- Use fragments only when necessary
-
-### One-Liner Code Philosophy
-
-**Maximize conciseness while preserving readability:**
+### Type-Safe Constants
 
 ```typescript
-// ✅ GOOD: One-liner arrow function
+export const STAKEHOLDER = {
+    USER: 'USER',
+    ADMIN: 'ADMIN',
+    ADMINISTRATOR: 'ADMINISTRATOR',
+} as const;
+
+export type StakeholderType = (typeof STAKEHOLDER)[keyof typeof STAKEHOLDER];
+```
+
+---
+
+## Code Optimization
+
+### One-Liner Philosophy
+
+```typescript
+// ✅ GOOD: Concise
 export const double = (n: number): number => n * 2;
-
-// ✅ GOOD: One-liner conditional
 const status = age >= 18 ? 'adult' : 'minor';
-
-// ✅ GOOD: One-liner array transformation
-const userNames = users.map((u) => u.name);
-
-// ✅ GOOD: One-liner object transformation
-const userMap = users.reduce((acc, u) => ({ ...acc, [u.id]: u }), {});
-
-// ✅ GOOD: One-liner filter + map chain
-const activeUserEmails = users.filter((u) => u.active).map((u) => u.email);
-
-// ✅ GOOD: One-liner early return
-if (!user) return null;
-
-// ✅ GOOD: One-liner nullish coalescing
+const names = users.map((u) => u.name);
 const displayName = user.name ?? user.email ?? 'Anonymous';
 
-// ✅ GOOD: One-liner optional chaining
-const street = user?.address?.street;
-
-// ❌ BAD: Verbose when one-liner is clearer
+// ❌ BAD: Verbose
 let status;
 if (age >= 18) {
-	status = 'adult';
+    status = 'adult';
 } else {
-	status = 'minor';
-}
-
-// ❌ BAD: Unnecessary function declaration
-function double(n: number): number {
-	return n * 2;
+    status = 'minor';
 }
 ```
 
-### Component Optimization
+### Tailwind Optimization
 
 ```typescript
-// ✅ GOOD: Concise component with inline props
-export const UserCard = ({ user }: { user: User }) => (
-  <div className="rounded-lg border p-4 shadow-sm">
-    <h3 className="text-lg font-semibold">{user.name}</h3>
-    <p className="text-sm text-gray-600">{user.email}</p>
-  </div>
-);
+// ✅ GOOD: All classnames on single line
+<div className="flex items-center justify-between px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-md" />
+```
 
-// ✅ GOOD: Component with conditional rendering
-export const StatusBadge = ({ status }: { status: string }) => (
-  <span className={`rounded px-2 py-1 text-xs font-medium ${status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-    {status}
-  </span>
-);
+---
 
-// ✅ GOOD: Component with array rendering
-export const UserList = ({ users }: { users: Array<User> }) => (
-  <div className="space-y-2">
-    {users.map((user) => (
-      <UserCard key={user.id} user={user} />
-    ))}
-  </div>
-);
+## Commands
 
-// ❌ BAD: Verbose component
-export const UserCard = (props: { user: User }) => {
-  const user = props.user;
-  return (
-    <div>
-      <h3>{user.name}</h3>
-      <p>{user.email}</p>
-    </div>
-  );
+```bash
+pnpm install     # Install dependencies (always use pnpm)
+pnpm dev         # Development server
+pnpm build       # Production build
+pnpm lint        # ESLint check
+pnpm type-check  # TypeScript check
+npx prisma migrate dev  # Run migrations
+npx prisma generate     # Generate Prisma client
+```
+
+---
+
+## Icons
+
+- **Single user icon**: Always use `CircleUserRound`
+- **Multiple users icon**: Always use `UsersRound`
+- Import: `import { CircleUserRound, UsersRound } from 'lucide-react'`
+
+---
+
+## Summary Checklist
+
+- [ ] Files under 300 lines
+- [ ] No `any` types
+- [ ] No generic `<T>` — use meaningful names
+- [ ] No `@ts-ignore` or `eslint-disable`
+- [ ] No unnecessary `useEffect`
+- [ ] No barrel exports (index.ts re-exports)
+- [ ] Arrow functions everywhere
+- [ ] Components in PascalCase
+- [ ] Interfaces with `I` prefix + `Request`/`Response` suffix
+- [ ] Request/Response interfaces above functions
+- [ ] Server actions return `{ success, data?, error? }`
+- [ ] Constants in dedicated files
+- [ ] Direct imports only
+- [ ] Page functions in camelCase
+- [ ] Using `CircleUserRound` for single user, `UsersRound` for groups
+
+---
+
+## Error Handling
+
+### Server Actions
+
+```typescript
+export const createUser = async (data: ICreateUserRequest): Promise<ICreateUserResponse> => {
+    try {
+        const user = await prisma.user.create({ data });
+        return { success: true, data: { user } };
+    } catch (error) {
+        console.error('[createUser]', error);
+        return { success: false, error: 'Failed to create user' };
+    }
 };
 ```
 
-### Hook Optimization
+### API Routes
 
 ```typescript
-// ✅ GOOD: Concise custom hook
-export const useUser = (id: string) => {
-	const [user, setUser] = useState<User | null>(null);
-	useEffect(() => {
-		fetchUser(id).then(setUser);
-	}, [id]);
-	return user;
-};
-
-// ✅ GOOD: One-liner derived state
-const [count, setCount] = useState(0);
-const doubled = count * 2;
-
-// ✅ GOOD: Memoized computation
-const expensiveValue = useMemo(() => computeExpensive(data), [data]);
-
-// ✅ GOOD: Callback optimization
-const handleClick = useCallback(() => setCount((c) => c + 1), []);
-
-// ❌ BAD: Unnecessary state for derived values
-const [doubled, setDoubled] = useState(0);
-useEffect(() => setDoubled(count * 2), [count]); // Use derived value instead
-```
-
-### API Call Optimization
-
-```typescript
-// ✅ GOOD: One-liner fetch with error handling
-export const fetchUser = async (id: string): Promise<User> =>
-	fetch(`/api/users/${id}`).then((r) => (r.ok ? r.json() : Promise.reject(r)));
-
-// ✅ GOOD: Parallel API calls
-export const fetchDashboard = async (): Promise<Dashboard> => {
-	const [users, posts, stats] = await Promise.all([fetchUsers(), fetchPosts(), fetchStats()]);
-	return { users, posts, stats };
-};
-
-// ✅ GOOD: Retry logic in one expression
-export const fetchWithRetry = async <T>(fn: () => Promise<T>, retries = 3): Promise<T> =>
-	fn().catch((err) => (retries > 0 ? fetchWithRetry(fn, retries - 1) : Promise.reject(err)));
-
-// ❌ BAD: Verbose fetch
-export const fetchUser = async (id: string): Promise<User> => {
-	const response = await fetch(`/api/users/${id}`);
-	if (!response.ok) {
-		throw new Error('Failed to fetch');
-	}
-	const data = await response.json();
-	return data;
-};
-```
-
-### State Management Patterns
-
-```typescript
-// ✅ GOOD: Zustand store (one-liner actions)
-export const useStore = create<Store>((set) => ({
-	count: 0,
-	increment: () => set((s) => ({ count: s.count + 1 })),
-	decrement: () => set((s) => ({ count: s.count - 1 })),
-	reset: () => set({ count: 0 }),
-}));
-
-// ✅ GOOD: React Context with reducer
-export const TodoContext = createContext<TodoState | null>(null);
-
-const todoReducer = (state: TodoState, action: TodoAction): TodoState => {
-	switch (action.type) {
-		case 'ADD':
-			return { ...state, todos: [...state.todos, action.todo] };
-		case 'REMOVE':
-			return { ...state, todos: state.todos.filter((t) => t.id !== action.id) };
-		default:
-			return state;
-	}
+export const POST = async (req: NextRequest): Promise<NextResponse> => {
+    try {
+        const body = await req.json();
+        // implementation
+        return NextResponse.json({ success: true, data });
+    } catch (error) {
+        console.error('[API/auth/login]', error);
+        return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    }
 };
 ```
 
@@ -691,146 +468,19 @@ const sortedUsers = useMemo(
   () => users.sort((a, b) => a.name.localeCompare(b.name)),
   [users],
 );
-
-// ✅ GOOD: useCallback for child component callbacks
-const MemoizedChild = memo(ChildComponent);
-const Parent = () => {
-  const handleClick = useCallback(() => console.log('clicked'), []);
-  return <MemoizedChild onClick={handleClick} />;
-};
 ```
 
 ### Database Query Optimization
 
 ```typescript
 // ✅ GOOD: Select only needed fields
-const users = await db.user.findMany({
-	select: { id: true, name: true, email: true },
+const users = await prisma.user.findMany({
+    select: { id: true, name: true, email: true },
 });
 
-// ✅ GOOD: Use indexes
-await db.user.findUnique({ where: { email } }); // email has unique index
-
 // ✅ GOOD: Batch operations
-await db.user.createMany({ data: users, skipDuplicates: true });
-
-// ❌ BAD: Select all fields when not needed
-const users = await db.user.findMany(); // Returns everything
+await prisma.user.createMany({ data: users, skipDuplicates: true });
 ```
-
-### Caching Strategies
-
-```typescript
-// ✅ GOOD: React Query for API caching
-export const useUsers = () =>
-	useQuery({
-		queryKey: ['users'],
-		queryFn: fetchUsers,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-	});
-
-// ✅ GOOD: Next.js fetch caching
-const users = await fetch('/api/users', {
-	next: { revalidate: 60 }, // Revalidate every 60 seconds
-}).then((r) => r.json());
-
-// ✅ GOOD: Memoization for expensive functions
-const memoized = new Map<string, Result>();
-export const expensiveFn = (key: string): Result =>
-	memoized.get(key) ?? memoized.set(key, computeExpensive(key)).get(key)!;
-```
-
----
-
-## Environment Variables
-
-### Local Development
-
-- Use `.env.local` per app (gitignored)
-- Commit `.env.example` with placeholder values
-- Frontend vars: `NEXT_PUBLIC_` prefix required
-- Backend vars: no prefix, injected via environment
-
-### Production
-
-- CI: GitHub Secrets
-- Frontend: Vercel Project Environment Variables
-- Backend: AWS Secrets Manager
-- Never hardcode secrets
-
----
-
-## Error Handling Philosophy
-
-### Root Cause Analysis
-
-- Never apply surface-level fixes
-- Trace error origin across package boundaries
-- Check type definitions in `@sakalsense/core` first
-- Verify workspace dependencies are linked correctly
-- Review ESLint/TypeScript errors before runtime testing
-
-### Professional Debugging Process
-
-1. Read full error stack trace
-2. Identify originating package and file
-3. Check recent changes in dependencies
-4. Validate type exports and imports
-5. Run `pnpm -r type-check` before committing fix
-6. Test fix in isolation before integration
-
----
-
-## CI/CD Workflow
-
-### Local Development
-
-- Workspace linking handles hot reload
-- Changes in `packages/core` reflect immediately in apps
-- No manual rebuilding required
-
-### Pre-commit Checks
-
-- `pnpm -r lint` — all packages must pass
-- `pnpm --filter @sakalsense/core type-check`
-- `pnpm --filter @sakalsense/frontend type-check`
-- `pnpm --filter @sakalsense/backend type-check`
-
-### Deployment
-
-- Frontend: Vercel (root: `apps/frontend`)
-- Backend: Docker → AWS ECR → ECS (GitHub Actions)
-- Core: Published to npm only for external consumption (not required for workspace dev)
-
----
-
-## Adding New Packages
-
-### Checklist
-
-1. Create directory: `packages/<name>`
-2. Add `package.json`: name `@sakalsense/<name>`
-3. Extend `tsconfig.base.json` in local `tsconfig.json`
-4. Configure ESLint flat config
-5. Add scripts: `type-check`, `build`, `lint`
-6. Update consumers: `workspace:*` in `apps/` dependencies
-7. Run `pnpm install` to link workspaces
-
----
-
-## PR Review Checklist
-
-### Required Before Merge
-
-- All ESLint rules pass: `pnpm -r lint`
-- All TypeScript checks pass: `pnpm -r type-check`
-- No server imports in frontend code
-- New env vars documented in `.env.example`
-- Changelog updated with changes
-- README updated if API changed
-- Code follows minimal-line philosophy
-- Tailwind classes on single lines
-- Arrow functions only — no `function` declarations
 
 ---
 
@@ -840,18 +490,16 @@ export const expensiveFn = (key: string): Result =>
 
 - Think optimization first — every line counts
 - Use functional patterns over imperative loops
-- Extract reusable logic to `@sakalsense/core`
 - Keep components under 100 lines
 - Use TypeScript inference where safe, explicit types for public APIs
 - Follow existing folder structure strictly
 - Never invent new directories without justification
 - Don't add dependencies without explicit request
+- Use meaningful generic type names, never `<T>` alone
 
 ### Scaling Assumptions
 
 - Codebase will grow to multiple teams
-- Services will be distributed across AWS
 - Frontend will handle millions of users
-- Core package will be open-sourced
 - Prioritize clarity over cleverness
 - Assume reviewers are senior engineers
