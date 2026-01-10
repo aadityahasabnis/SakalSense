@@ -1,8 +1,9 @@
 {
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "version": 2,
-    "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.26.2 --activate && pnpm install --no-frozen-lockfile",
-    "buildCommand": "echo 'Build complete - using serverless function'",
+    "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.26.2 --activate && pnpm install --shamefully-hoist --no-frozen-lockfile",
+    "buildCommand": "cd ../.. && pnpm --filter @sakalsense/backend install && cd apps/backend",
+    "outputDirectory": ".",
     "rewrites": [
         {
             "source": "/(.*)",
