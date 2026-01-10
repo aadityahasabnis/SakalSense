@@ -12,7 +12,8 @@ export default defineConfig({
     bundle: true,
     splitting: false,
     outExtension: () => ({ js: '.js' }),
-    // Externalize native modules to prevent bundling issues
+    // Bundle everything except native modules
+    noExternal: [/.*/],
     external: ['argon2', 'sharp'],
     onSuccess: async () => {
         const fs = await import('fs');
