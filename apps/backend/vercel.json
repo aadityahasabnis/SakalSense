@@ -3,11 +3,10 @@
     "version": 2,
     "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.26.2 --activate && pnpm install --filter @sakalsense/backend --shamefully-hoist --no-frozen-lockfile",
     "buildCommand": "pnpm build",
-    "outputDirectory": ".vercel/output",
-    "rewrites": [
+    "routes": [
         {
-            "source": "/(.*)",
-            "destination": "/api"
+            "src": "/(.*)",
+            "dest": "/api"
         }
     ],
     "headers": [

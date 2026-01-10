@@ -53,8 +53,16 @@ export default defineConfig({
             JSON.stringify(vcConfig, null, 2)
         );
         
-        // Create config.json for output directory
-        const outputConfig = { version: 3 };
+        // Create config.json for output directory with routes
+        const outputConfig = {
+            version: 3,
+            routes: [
+                {
+                    src: '/(.*)',
+                    dest: '/api'
+                }
+            ]
+        };
         fs.writeFileSync(
             path.join(outputDir, 'config.json'),
             JSON.stringify(outputConfig, null, 2)
