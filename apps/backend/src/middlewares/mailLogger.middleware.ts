@@ -64,7 +64,7 @@ export const getMailLogsByRecipient = async (recipientEmail: string): Promise<Ar
         const logs: Array<IEmailLogEntry> = [];
 
         for (const data of values) {
-            if (data) {
+            if (data && typeof data === 'string') {
                 const log = JSON.parse(data) as IEmailLogEntry;
                 if (log.recipient.toLowerCase() === sanitizedEmail) {
                     logs.push(log);
@@ -110,9 +110,9 @@ export const getMailLogStats = async (): Promise<{ total: number; sent: number; 
         const values = await redis.mGet([STATS_KEY.TOTAL, STATS_KEY.SENT, STATS_KEY.FAILED]);
 
         return {
-            total: parseInt(values[0] ?? '0', 10),
-            sent: parseInt(values[1] ?? '0', 10),
-            failed: parseInt(values[2] ?? '0', 10),
+            total: parseInt((values[0] as string | null) ?? '0', 10),
+            sent: parseInt((values[1] as string | null) ?? '0', 10),
+            failed: parseInt((values[2] as string | null) ?? '0', 10),
         };
     } catch (error) {
         console.error('[MailLog] Failed to get stats:', error);
