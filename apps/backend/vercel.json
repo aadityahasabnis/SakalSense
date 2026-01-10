@@ -2,7 +2,7 @@
     "$schema": "https://openapi.vercel.sh/vercel.json",
     "version": 2,
     "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.26.2 --activate && pnpm install --filter @sakalsense/backend --shamefully-hoist --no-frozen-lockfile",
-    "buildCommand": "echo 'Serverless function ready'",
+    "buildCommand": "pnpm build",
     "outputDirectory": ".",
     "rewrites": [
         {
@@ -11,7 +11,7 @@
         }
     ],
     "functions": {
-        "api/index.ts": {
+        "dist/api/index.js": {
             "maxDuration": 30,
             "memory": 1024
         }
