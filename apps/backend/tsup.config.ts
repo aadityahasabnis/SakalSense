@@ -2,7 +2,6 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
     entry: { 
-        index: 'src/index.ts',
         'api/index': 'api/index.ts'
     },
     format: ['esm'],
@@ -15,4 +14,12 @@ export default defineConfig({
     outExtension: () => ({ js: '.js' }),
     // Externalize native modules to prevent bundling issues
     external: ['argon2', 'sharp'],
+    onSuccess: async () => {
+        const fs = await import('fs');
+        const path = await import('path');
+        const srcFile = path.join(process.cwd(), 'dist/api/index.js');
+        const destFile = path.join(process.cwd(), 'api/index.js');
+        fs.copyFileSync(srcFile, destFile);
+        console.log('✓ Copied dist/api/index.js to api/index.js');
+    },
 });
