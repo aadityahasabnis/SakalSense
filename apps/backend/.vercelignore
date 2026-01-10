@@ -1,0 +1,19 @@
+# Exclude source files from deployment
+
+src/
+api/handler.ts
+
+# Keep only the bundled output
+
+!api/index.js
+
+# Exclude build artifacts
+
+dist/
+node_modules/
+
+# Exclude config files
+
+tsconfig.json
+tsup.config.ts
+eslint.config.js
