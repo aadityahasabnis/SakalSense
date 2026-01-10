@@ -22,5 +22,12 @@ export default defineConfig({
         const destFile = path.join(process.cwd(), 'api/index.js');
         fs.copyFileSync(srcFile, destFile);
         console.log('✓ Copied dist/api/index.js to api/index.js');
+        
+        // Delete handler.ts so Vercel only sees index.js
+        const handlerFile = path.join(process.cwd(), 'api/handler.ts');
+        if (fs.existsSync(handlerFile)) {
+            fs.unlinkSync(handlerFile);
+            console.log('✓ Deleted api/handler.ts - only bundled index.js remains');
+        }
     },
 });
