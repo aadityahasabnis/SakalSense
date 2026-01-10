@@ -39,7 +39,7 @@ export const validateResetToken = async (prefixedToken: string): Promise<{ data:
     const parsed = parseResetToken(prefixedToken);
     if (!parsed) return null;
     const data = await getRedis().get(resetTokenKey(parsed.role, parsed.token));
-    return data ? { data: JSON.parse(data) as IPasswordResetTokenData, role: parsed.role } : null;
+    return data && typeof data === 'string' ? { data: JSON.parse(data) as IPasswordResetTokenData, role: parsed.role } : null;
 };
 
 // Invalidate token after use
