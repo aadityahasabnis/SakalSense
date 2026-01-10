@@ -1,6 +1,7 @@
 # Build outputs
 dist/
 api/index.js
+.vercel/
 
 # Dependencies
 node_modules/

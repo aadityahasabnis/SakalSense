@@ -3,7 +3,7 @@
     "version": 2,
     "installCommand": "cd ../.. && corepack enable && corepack prepare pnpm@10.26.2 --activate && pnpm install --filter @sakalsense/backend --shamefully-hoist --no-frozen-lockfile",
     "buildCommand": "pnpm build",
-    "outputDirectory": ".",
+    "outputDirectory": ".vercel/output",
     "rewrites": [
         {
             "source": "/(.*)",
