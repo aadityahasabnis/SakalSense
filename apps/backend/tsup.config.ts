@@ -2,9 +2,9 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
     entry: { 
-        'api/index': 'api/handler.ts'
+        'api/index': 'vercel-handler.ts'
     },
-    format: ['esm'],
+    format: ['cjs'], // CommonJS format - fixes "Dynamic require not supported" error
     target: 'node20',
     outDir: 'dist',
     clean: true,

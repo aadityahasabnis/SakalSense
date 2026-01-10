@@ -1,2 +1,6 @@
-# Only exclude dist folder - let Vercel detect api/index.js after build
+# Build artifacts
 dist/
+
+# These files are only needed for build (Vercel's builder needs src/)
+# After build, Vercel will deploy api/index.js (5.4MB bundled)
+# which is self-contained with all dependencies inline

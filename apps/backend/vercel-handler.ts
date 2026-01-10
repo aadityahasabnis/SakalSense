@@ -6,8 +6,8 @@
 // =============================================
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createExpressApp } from '../src/app.js';
-import { connectMongoDB, connectRedis } from '../src/db/index.js';
+import { createExpressApp } from './src/app.js';
+import { connectMongoDB, connectRedis } from './src/db/index.js';
 
 // =============================================
 // Database Connection Management
