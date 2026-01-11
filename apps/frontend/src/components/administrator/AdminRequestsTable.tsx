@@ -133,13 +133,14 @@ export const AdminRequestsTable = () => {
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     // Fetch requests with caching (staleTime: 30s, gcTime: 5m)
-    const { data: requestsResponse, isLoading, refetch } = useQuery({
+    const { data: requestsResponse, isLoading, isError, error, refetch } = useQuery({
         queryKey: ['admin-requests', statusFilter, page, sortField, sortOrder],
         queryFn: () => getAdminRequests({ status: statusFilter, page, limit: 20, sortBy: sortField, sortOrder }),
         staleTime: 30 * 1000,
         gcTime: 5 * 60 * 1000,
     });
     const requestsData = requestsResponse?.success ? requestsResponse.data : undefined;
+    const errorMessage = !requestsResponse?.success ? requestsResponse?.error : isError ? String(error) : undefined;
 
     // Fetch counts for filter badges
     const { data: countsResponse } = useQuery({
@@ -271,7 +272,13 @@ export const AdminRequestsTable = () => {
                         </tr>
                     </thead>
                     <tbody className='divide-y divide-slate-700'>
-                        {isLoading ? (
+                        {errorMessage ? (
+                            <tr>
+                                <td colSpan={6} className='px-6 py-12 text-center text-red-400'>
+                                    Error: {errorMessage}
+                                </td>
+                            </tr>
+                        ) : isLoading ? (
                             <tr>
                                 <td colSpan={6} className='px-6 py-12 text-center text-slate-400'>Loading...</td>
                             </tr>

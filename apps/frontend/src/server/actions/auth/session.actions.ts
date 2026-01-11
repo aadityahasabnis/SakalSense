@@ -72,3 +72,48 @@ export const terminateSession = async (params: ITerminateSessionRequest, stakeho
     await createDebugLog({ method: 'DELETE', url: '/auth/sessions', requestBody: { sessionId: params.sessionId, stakeholder }, responseBody: { success: true }, status: 200, duration: Date.now() - start, stakeholder, stakeholderId: payload.userId });
     return { success: true, message: 'Session terminated successfully' };
 };
+
+// =============================================
+// Terminate Session With Credentials (for login flow)
+// =============================================
+
+interface ITerminateWithCredentialsRequest {
+    sessionId: string;
+    email: string;
+    password: string;
+    stakeholder: StakeholderType;
+}
+
+// terminateSessionWithCredentials: Terminate session during login (before user has JWT)
+export const terminateSessionWithCredentials = async (params: ITerminateWithCredentialsRequest): Promise<IApiResponse> => {
+    const start = Date.now();
+    const { sessionId, email, password, stakeholder } = params;
+
+    // Validate credentials
+    const { prisma } = await import('@/server/db/prisma');
+    const { verifyPassword } = await import('@/server/utils/password');
+
+    let entity;
+    switch (stakeholder) {
+        case 'USER':
+            entity = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } });
+            break;
+        case 'ADMIN':
+            entity = await prisma.admin.findUnique({ where: { email: email.toLowerCase().trim() } });
+            break;
+        case 'ADMINISTRATOR':
+            entity = await prisma.administrator.findUnique({ where: { email: email.toLowerCase().trim() } });
+            break;
+    }
+
+    if (!entity || !(await verifyPassword(password, entity.password))) {
+        await createDebugLog({ method: 'DELETE', url: '/auth/sessions/terminate-with-credentials', requestBody: { email, stakeholder }, responseBody: { error: 'Invalid credentials' }, status: 401, duration: Date.now() - start, stakeholder });
+        return { success: false, error: 'Invalid credentials' };
+    }
+
+    // Terminate the session
+    await invalidateSession(sessionId, email.toLowerCase().trim(), stakeholder);
+
+    await createDebugLog({ method: 'DELETE', url: '/auth/sessions/terminate-with-credentials', requestBody: { sessionId, email, stakeholder }, responseBody: { success: true }, status: 200, duration: Date.now() - start, stakeholder, stakeholderId: entity.id });
+    return { success: true, message: 'Session terminated successfully' };
+};

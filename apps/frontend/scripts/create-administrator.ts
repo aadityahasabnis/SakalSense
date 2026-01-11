@@ -1,13 +1,29 @@
 // =============================================
 // Create Administrator Script - Seed super admin account
-// Usage: npx tsx scripts/create-administrator.ts
+// Usage: bun run db:seed OR npx tsx scripts/create-administrator.ts
 // =============================================
 
+import * as path from 'path';
 import * as readline from 'readline';
+import { fileURLToPath } from 'url';
+import { config } from 'dotenv';
 import argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
 
-const prisma = new PrismaClient();
+// Load .env.local from parent directory
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+config({ path: path.join(__dirname, '..', '.env.local') });
+
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+    console.error('❌ DATABASE_URL is not set in .env.local');
+    process.exit(1);
+}
+
+// Use accelerateUrl for the Prisma client (required by this project's setup)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const prisma = new PrismaClient({ accelerateUrl: DATABASE_URL } as any);
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 

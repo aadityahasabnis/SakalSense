@@ -14,14 +14,18 @@ import { type DeviceType, type StakeholderType } from '@/types/auth.types';
 const sessionKey = (role: StakeholderType, email: string, sessionId: string): string => `session:${role}:${email}:${sessionId}`;
 const sessionPattern = (role: StakeholderType, email: string): string => `session:${role}:${email}:*`;
 
-// Scan for keys matching pattern (non-blocking, production-safe)
-const scanKeys = async (pattern: string): Promise<Array<string>> => {
+// Get keys matching pattern - uses KEYS command for reliability
+// Note: KEYS is blocking but acceptable for session management with limited keys per user
+const getMatchingKeys = async (pattern: string): Promise<Array<string>> => {
     const redis = await getRedis();
-    const keys: Array<string> = [];
-    for await (const key of redis.scanIterator({ MATCH: pattern, COUNT: 100 })) {
-        if (typeof key === 'string') keys.push(key);
+    try {
+        const keys = await redis.keys(pattern);
+        logSession(`KEYS lookup: ${pattern} -> ${keys.length} found`, '', 'USER');
+        return keys;
+    } catch (error) {
+        console.error('[Session] Failed to get keys:', error);
+        return [];
     }
-    return keys;
 };
 
 // Debug log helper
@@ -68,10 +72,10 @@ export const createSession = async (
     return { session, limitExceeded, activeSessions };
 };
 
-// getActiveSessions: Get all active sessions for user using SCAN + MGET
+// getActiveSessions: Get all active sessions for user using KEYS + MGET
 export const getActiveSessions = async (email: string, role: StakeholderType): Promise<Array<ISession>> => {
     const redis = await getRedis();
-    const keys = await scanKeys(sessionPattern(role, email));
+    const keys = await getMatchingKeys(sessionPattern(role, email));
     if (keys.length === 0) return [];
 
     const values = await redis.mGet(keys);
@@ -104,7 +108,7 @@ export const updateSessionActivity = async (sessionId: string, email: string, ro
 // invalidateAllSessions: Logout everywhere
 export const invalidateAllSessions = async (email: string, role: StakeholderType): Promise<void> => {
     const redis = await getRedis();
-    const keys = await scanKeys(sessionPattern(role, email));
+    const keys = await getMatchingKeys(sessionPattern(role, email));
     if (keys.length > 0) {
         await redis.del(keys);
         logSession(`INVALIDATE_ALL (${keys.length} sessions)`, email, role);

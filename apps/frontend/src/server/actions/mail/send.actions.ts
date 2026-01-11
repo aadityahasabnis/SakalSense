@@ -41,7 +41,7 @@ export const sendTestEmailAction = async (params: ISendTestEmailRequest): Promis
     const payload = await verifyJWT(token);
     if (payload?.role !== 'ADMINISTRATOR') return { success: false, error: 'Administrator access required' };
 
-    const isValid = await validateSession(payload.sessionId, payload.userId, payload.role);
+    const isValid = await validateSession(payload.sessionId, payload.email, payload.role);
     if (!isValid) return { success: false, error: 'Session expired' };
 
     // Validation

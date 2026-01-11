@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import { getDeviceIcon } from '@/constants/icons';
 import { type ISession } from '@/lib/interfaces';
-import { terminateSession } from '@/server/actions/auth/session.actions';
+import { terminateSessionWithCredentials } from '@/server/actions/auth/session.actions';
 import { type StakeholderType } from '@/types/auth.types';
 
 // =============================================
@@ -34,7 +34,7 @@ const formatRelativeTime = (dateString: string) => {
     return `${diffDays}d ago`;
 };
 
-export const SessionLimitDialog = ({ role, sessions, onClose, onSessionTerminated }: SessionLimitDialogProps) => {
+export const SessionLimitDialog = ({ role, sessions, credentials, onClose, onSessionTerminated }: SessionLimitDialogProps) => {
     const [terminatingId, setTerminatingId] = useState<string | undefined>(undefined);
     const [error, setError] = useState<string | undefined>(undefined);
 
@@ -42,7 +42,12 @@ export const SessionLimitDialog = ({ role, sessions, onClose, onSessionTerminate
         setTerminatingId(sessionId);
         setError(undefined);
 
-        const response = await terminateSession({ sessionId }, role);
+        const response = await terminateSessionWithCredentials({
+            sessionId,
+            email: credentials.email,
+            password: credentials.password,
+            stakeholder: role,
+        });
 
         if (response.success) {
             onSessionTerminated();

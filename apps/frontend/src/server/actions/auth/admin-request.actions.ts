@@ -8,18 +8,17 @@ import { randomBytes } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { cookies, headers } from 'next/headers';
 
-import { AUTH_COOKIE, COOKIE_CONFIG } from '@/constants/auth.constants';
+import { AUTH_COOKIE } from '@/constants/auth.constants';
 import { RATE_LIMIT_AUTH } from '@/constants/rate-limit.constants';
 import { BASE_URL } from '@/env';
 import { type IApiResponse } from '@/lib/interfaces/api.interfaces';
 import { prisma } from '@/server/db/prisma';
 import { createDebugLog } from '@/server/utils/debugLog';
-import { detectDevice, getClientIP } from '@/server/utils/device';
-import { signJWT, verifyJWT } from '@/server/utils/jwt';
+import { getClientIP } from '@/server/utils/device';
+import { verifyJWT } from '@/server/utils/jwt';
 import { sendNotificationEmail } from '@/server/utils/mail';
 import { hashPassword } from '@/server/utils/password';
 import { consumeRateLimit } from '@/server/utils/rate-limit';
-import { createSession } from '@/server/utils/session';
 
 // =============================================
 // Types
