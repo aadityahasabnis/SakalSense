@@ -15,7 +15,8 @@
         "db:migrate": "prisma migrate dev",
         "db:push": "prisma db push",
         "db:studio": "prisma studio",
-        "db:seed": "tsx scripts/create-administrator.ts"
+        "db:seed": "tsx scripts/create-administrator.ts",
+        "postinstall": "prisma generate"
     },
     "dependencies": {
         "@prisma/client": "^7.2.0",
