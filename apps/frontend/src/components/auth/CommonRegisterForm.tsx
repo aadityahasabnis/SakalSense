@@ -5,8 +5,7 @@ import { type FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { clientApi } from '@/lib/http';
-import { type ILoginResponse } from '@/lib/interfaces';
+import { registerUserAction } from '@/server/actions/auth/register.actions';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -14,7 +13,6 @@ import { type ILoginResponse } from '@/lib/interfaces';
 
 interface CommonRegisterFormProps {
     role: 'USER' | 'ADMIN';
-    apiEndpoint: string;
     redirectPath: string;
     loginPath: string;
     title?: string;
@@ -30,14 +28,14 @@ interface RegisterFormState {
     mobile: string;
     inviteCode: string;
     loading: boolean;
-    error: string | null;
+    error: string | undefined;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const CommonRegisterForm = ({ apiEndpoint, redirectPath, loginPath, title = 'Create Account', subtitle, requireInviteCode = false }: CommonRegisterFormProps) => {
+export const CommonRegisterForm = ({ redirectPath, loginPath, title = 'Create Account', subtitle, requireInviteCode = false }: CommonRegisterFormProps) => {
     const router = useRouter();
 
     const [form, setForm] = useState<RegisterFormState>({
@@ -48,11 +46,11 @@ export const CommonRegisterForm = ({ apiEndpoint, redirectPath, loginPath, title
         mobile: '',
         inviteCode: '',
         loading: false,
-        error: null,
+        error: undefined,
     });
 
     const updateField = (field: keyof RegisterFormState, value: string) => {
-        setForm((prev) => ({ ...prev, [field]: value, error: null }));
+        setForm((prev) => ({ ...prev, [field]: value, error: undefined }));
     };
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -64,24 +62,19 @@ export const CommonRegisterForm = ({ apiEndpoint, redirectPath, loginPath, title
             return;
         }
 
-        if (form.password.length < 6) {
-            setForm((prev) => ({ ...prev, error: 'Password must be at least 6 characters' }));
+        if (form.password.length < 8) {
+            setForm((prev) => ({ ...prev, error: 'Password must be at least 8 characters' }));
             return;
         }
 
-        setForm((prev) => ({ ...prev, loading: true, error: null }));
+        setForm((prev) => ({ ...prev, loading: true, error: undefined }));
 
-        // Build request body
-        const body: Record<string, unknown> = {
+        const response = await registerUserAction({
             fullName: form.fullName,
             email: form.email,
             password: form.password,
-        };
-
-        if (form.mobile) body.mobile = form.mobile;
-        if (requireInviteCode) body.inviteCode = form.inviteCode;
-
-        const response = await clientApi.post<ILoginResponse>(apiEndpoint, body);
+            mobile: form.mobile || undefined,
+        });
 
         if (response.success) {
             router.push(redirectPath);

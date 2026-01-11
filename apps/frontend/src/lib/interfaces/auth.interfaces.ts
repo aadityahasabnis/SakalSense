@@ -7,6 +7,7 @@ import { type DeviceType, type StakeholderType } from '@/types/auth.types';
 // JWT payload embedded in token
 export interface IJWTPayload {
     userId: string;
+    email: string;
     fullName: string;
     avatarLink?: string;
     role: StakeholderType;
@@ -16,13 +17,13 @@ export interface IJWTPayload {
 // Redis session structure
 export interface ISession {
     sessionId: string;
-    userId: string;
+    email: string;
     role: StakeholderType;
     device: DeviceType;
     ip: string;
     location?: string;
     userAgent: string;
-    createdAt: string;
+    loginAt: string;
     lastActiveAt: string;
 }
 

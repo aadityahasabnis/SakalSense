@@ -1,30 +1,29 @@
 'use client';
 
 // =============================================
-// LogoutButton - Client-side logout with redirect
+// LogoutButton - Client-side logout with server action
 // =============================================
 
 import { useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { clientApi } from '@/lib/http';
+import { logoutAction } from '@/server/actions/auth/login.actions';
 import { type StakeholderType } from '@/types/auth.types';
 
 interface LogoutButtonProps {
-    apiEndpoint: string;
-    loginPath: string;
     role: StakeholderType;
+    loginPath: string;
     className?: string;
 }
 
-export const LogoutButton = ({ apiEndpoint, loginPath, className }: LogoutButtonProps) => {
+export const LogoutButton = ({ role, loginPath, className }: LogoutButtonProps) => {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
 
     const handleLogout = async () => {
         setLoading(true);
-        await clientApi.post(apiEndpoint, {});
+        await logoutAction({ stakeholder: role });
         router.push(loginPath);
         router.refresh();
     };

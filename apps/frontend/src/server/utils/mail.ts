@@ -7,7 +7,7 @@ import nodemailer from 'nodemailer';
 import { DEFAULT_SENDER, EMAIL_RETRY_CONFIG, EMAIL_TYPE, type EmailType, GMAIL_SMTP_CONFIG } from '@/constants/email.constants';
 import { GMAIL_ACCOUNT, GMAIL_PASSWORD } from '@/env';
 import { type IEmailPayload, type IEmailResult, type IOtpEmailData, type IPasswordResetEmailData } from '@/lib/interfaces/email.interfaces';
-import { notificationEmailTemplate, otpEmailTemplate, passwordResetEmailTemplate, testEmailTemplate } from '@/lib/mail/templates';
+import { notificationEmailTemplate, otpEmailTemplate, passwordResetEmailTemplate, testEmailTemplate } from '@/server/utils/mail-templates';
 
 // RFC 5322 compliant email regex
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;

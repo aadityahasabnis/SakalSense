@@ -5,9 +5,8 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { SessionLimitDialog } from '@/components/auth/SessionLimitDialog';
-import { ADMINISTRATOR_API_ROUTES } from '@/constants/routes/administrator.routes';
-import { clientApi } from '@/lib/http';
-import { type ILoginResponse, type ISession } from '@/lib/interfaces';
+import { type ISession } from '@/lib/interfaces';
+import { loginAction } from '@/server/actions/auth/login.actions';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
@@ -20,7 +19,7 @@ const AdministratorLoginPage = () => {
         email: '',
         password: '',
         loading: false,
-        error: null as string | null,
+        error: undefined as string | undefined,
     });
 
     const [sessionLimit, setSessionLimit] = useState<{ show: boolean; sessions: Array<ISession> }>({
@@ -30,12 +29,9 @@ const AdministratorLoginPage = () => {
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setForm((prev) => ({ ...prev, loading: true, error: null }));
+        setForm((prev) => ({ ...prev, loading: true, error: undefined }));
 
-        const response = await clientApi.post<ILoginResponse>(ADMINISTRATOR_API_ROUTES.auth.login, {
-            email: form.email,
-            password: form.password,
-        });
+        const response = await loginAction({ email: form.email, password: form.password, stakeholder: 'ADMINISTRATOR' });
 
         if (response.success) {
             router.push('/administrator');

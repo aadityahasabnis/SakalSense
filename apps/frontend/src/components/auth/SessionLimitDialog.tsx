@@ -3,11 +3,8 @@
 import { useState } from 'react';
 
 import { getDeviceIcon } from '@/constants/icons';
-import { ADMIN_API_ROUTES } from '@/constants/routes/admin.routes';
-import { ADMINISTRATOR_API_ROUTES } from '@/constants/routes/administrator.routes';
-import { USER_API_ROUTES } from '@/constants/routes/user.routes';
-import { clientApi } from '@/lib/http';
 import { type ISession } from '@/lib/interfaces';
+import { terminateSession } from '@/server/actions/auth/session.actions';
 import { type StakeholderType } from '@/types/auth.types';
 
 // =============================================
@@ -21,18 +18,6 @@ interface SessionLimitDialogProps {
     onClose: () => void;
     onSessionTerminated: () => void;
 }
-
-// Get terminate endpoint from route constants
-const getTerminateEndpoint = (role: StakeholderType, sessionId: string): string => {
-    switch (role) {
-        case 'ADMIN':
-            return ADMIN_API_ROUTES.auth.terminateSession(sessionId);
-        case 'ADMINISTRATOR':
-            return ADMINISTRATOR_API_ROUTES.auth.terminateSession(sessionId);
-        default:
-            return USER_API_ROUTES.auth.terminateSession(sessionId);
-    }
-};
 
 // Format relative time for display
 const formatRelativeTime = (dateString: string) => {
@@ -49,18 +34,15 @@ const formatRelativeTime = (dateString: string) => {
     return `${diffDays}d ago`;
 };
 
-export const SessionLimitDialog = ({ role, sessions, credentials, onClose, onSessionTerminated }: SessionLimitDialogProps) => {
-    const [terminatingId, setTerminatingId] = useState<string | null>(null);
-    const [error, setError] = useState<string | null>(null);
+export const SessionLimitDialog = ({ role, sessions, onClose, onSessionTerminated }: SessionLimitDialogProps) => {
+    const [terminatingId, setTerminatingId] = useState<string | undefined>(undefined);
+    const [error, setError] = useState<string | undefined>(undefined);
 
     const handleTerminate = async (sessionId: string) => {
         setTerminatingId(sessionId);
-        setError(null);
+        setError(undefined);
 
-        const response = await clientApi.post(getTerminateEndpoint(role, sessionId), {
-            email: credentials.email,
-            password: credentials.password,
-        });
+        const response = await terminateSession({ sessionId }, role);
 
         if (response.success) {
             onSessionTerminated();
@@ -68,7 +50,7 @@ export const SessionLimitDialog = ({ role, sessions, credentials, onClose, onSes
         }
 
         setError(response.error ?? 'Failed to terminate session');
-        setTerminatingId(null);
+        setTerminatingId(undefined);
     };
 
     return (

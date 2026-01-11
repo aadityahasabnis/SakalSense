@@ -60,7 +60,7 @@ model AdminInviteRequest {
 
   @@index([email])
   @@index([status])
-  @@map("admin_invite_requests")
+  @@map("admin_requests")
 }
 
 // Administrator: Super admins - seeded only, 2 session limit

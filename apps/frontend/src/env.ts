@@ -9,8 +9,8 @@ export const NODE_ENV: NodeEnvType = (process.env.NODE_ENV as NodeEnvType) ?? 'd
 export const IS_PRODUCTION = NODE_ENV === 'production';
 export const IS_DEVELOPMENT = NODE_ENV === 'development';
 
-// API URL (NEXT_PUBLIC_ for client-side access)
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ? `${process.env.NEXT_PUBLIC_API_URL}/api` : 'http://localhost:8000/api';
+// Base URL for the Next.js application
+export const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://localhost:3000';
 
 // Database (PostgreSQL via Prisma Accelerate)
 export const DATABASE_URL = process.env.DATABASE_URL ?? '';

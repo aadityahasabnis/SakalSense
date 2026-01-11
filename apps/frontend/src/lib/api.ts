@@ -9,9 +9,12 @@ import { redirect } from 'next/navigation';
 
 import { type HttpMethodType, type IApiResponse } from './interfaces';
 
-import { API_URL, IS_DEVELOPMENT } from '@/env';
+import { BASE_URL, IS_DEVELOPMENT } from '@/env';
 import { type IFormData } from '@/types/common.types';
 import { createAbortController, formDataToJson, getErrorMessage, isAbortError, logApiCall } from '@/utils/api.utils';
+
+// API URL derived from BASE_URL for backwards compatibility
+const API_URL = `${BASE_URL}/api`;
 
 // =============================================
 // Types

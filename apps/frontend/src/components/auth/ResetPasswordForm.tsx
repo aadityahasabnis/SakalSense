@@ -10,8 +10,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Form } from '@/components/form/Form';
-import { clientApiCall } from '@/lib/http';
-import { type StakeholderType } from '@/types/auth.types';
+import { resetPasswordAction } from '@/server/actions/auth/password-reset.actions';
 import { type FormConfig, type FormValues } from '@/types/form.types';
 
 // =============================================
@@ -19,8 +18,6 @@ import { type FormConfig, type FormValues } from '@/types/form.types';
 // =============================================
 
 interface ResetPasswordFormProps {
-    role: StakeholderType;
-    apiEndpoint: string;
     loginPath: string;
     title?: string;
     subtitle?: string;
@@ -30,12 +27,7 @@ interface ResetPasswordFormProps {
 // Component
 // =============================================
 
-export const ResetPasswordForm = ({
-    apiEndpoint,
-    loginPath,
-    title = 'Reset Password',
-    subtitle = 'Enter your new password',
-}: ResetPasswordFormProps) => {
+export const ResetPasswordForm = ({ loginPath, title = 'Reset Password', subtitle = 'Enter your new password' }: ResetPasswordFormProps) => {
     const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
@@ -44,21 +36,13 @@ export const ResetPasswordForm = ({
 
     // Redirect if no token
     useEffect(() => {
-        if (!token) {
-            router.push(loginPath);
-        }
+        if (!token) router.push(loginPath);
     }, [token, router, loginPath]);
 
-    // API call for reset password
+    // Server action for reset password
     const resetPassword = async (values: FormValues) => {
-        return clientApiCall<void>({
-            method: 'POST',
-            url: apiEndpoint,
-            body: {
-                token,
-                newPassword: values.newPassword,
-            },
-        });
+        if (!token) return { success: false, error: 'Invalid reset token' };
+        return resetPasswordAction({ token, newPassword: String(values.newPassword) });
     };
 
     // Form configuration with password match validation
@@ -80,12 +64,7 @@ export const ResetPasswordForm = ({
                 placeholder: 'Confirm new password',
                 required: true,
                 minLength: 8,
-                validate: (value, allValues) => {
-                    if (value !== allValues.newPassword) {
-                        return 'Passwords do not match';
-                    }
-                    return undefined;
-                },
+                validate: (value, allValues) => (value !== allValues.newPassword ? 'Passwords do not match' : undefined),
             },
         ],
         submit: {

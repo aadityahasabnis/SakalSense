@@ -4,8 +4,11 @@
 
 import { type HttpMethodType, type IApiResponse } from './interfaces';
 
-import { API_URL } from '@/env';
+import { BASE_URL } from '@/env';
 import { createAbortController, getErrorMessage, isAbortError, logApiCall } from '@/utils/api.utils';
+
+// API URL derived from BASE_URL for backwards compatibility
+const API_URL = `${BASE_URL}/api`;
 
 // =============================================
 // Types

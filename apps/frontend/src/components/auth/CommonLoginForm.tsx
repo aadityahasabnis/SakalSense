@@ -7,8 +7,8 @@ import { useRouter } from 'next/navigation';
 
 import { SessionLimitDialog } from './SessionLimitDialog';
 
-import { clientApi } from '@/lib/http';
-import { type ILoginResponse, type ISession } from '@/lib/interfaces';
+import { type ISession } from '@/lib/interfaces';
+import { loginAction } from '@/server/actions/auth/login.actions';
 import { type StakeholderType } from '@/types/auth.types';
 
 // =============================================
@@ -17,7 +17,6 @@ import { type StakeholderType } from '@/types/auth.types';
 
 interface CommonLoginFormProps {
     role: StakeholderType;
-    apiEndpoint: string;
     redirectPath: string;
     registerPath?: string;
     forgotPasswordPath?: string;
@@ -29,7 +28,7 @@ interface LoginFormState {
     email: string;
     password: string;
     loading: boolean;
-    error: string | null;
+    error: string | undefined;
 }
 
 interface SessionLimitState {
@@ -41,14 +40,14 @@ interface SessionLimitState {
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const CommonLoginForm = ({ role, apiEndpoint, redirectPath, registerPath, forgotPasswordPath, title = 'Welcome Back', subtitle }: CommonLoginFormProps) => {
+export const CommonLoginForm = ({ role, redirectPath, registerPath, forgotPasswordPath, title = 'Welcome Back', subtitle }: CommonLoginFormProps) => {
     const router = useRouter();
 
     const [form, setForm] = useState<LoginFormState>({
         email: '',
         password: '',
         loading: false,
-        error: null,
+        error: undefined,
     });
 
     const [sessionLimit, setSessionLimit] = useState<SessionLimitState>({
@@ -58,12 +57,9 @@ export const CommonLoginForm = ({ role, apiEndpoint, redirectPath, registerPath,
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        setForm((prev) => ({ ...prev, loading: true, error: null }));
+        setForm((prev) => ({ ...prev, loading: true, error: undefined }));
 
-        const response = await clientApi.post<ILoginResponse>(apiEndpoint, {
-            email: form.email,
-            password: form.password,
-        });
+        const response = await loginAction({ email: form.email, password: form.password, stakeholder: role });
 
         if (response.success) {
             router.push(redirectPath);

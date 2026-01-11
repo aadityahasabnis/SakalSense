@@ -2,6 +2,8 @@
 // Auth Constants - Complete authentication configuration
 // =============================================
 
+import { IS_PRODUCTION } from '@/env';
+
 // Stakeholder identifiers (internal use - NEVER change these)
 export const STAKEHOLDER = { USER: 'USER', ADMIN: 'ADMIN', ADMINISTRATOR: 'ADMINISTRATOR' } as const;
 
@@ -23,7 +25,7 @@ export const DEVICE = { MOBILE: 'mobile', TABLET: 'tablet', LAPTOP: 'laptop', DE
 // Cookie configuration
 export const COOKIE_CONFIG = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: IS_PRODUCTION,
     sameSite: 'lax' as const,
     maxAge: SESSION_TTL * 1000,
     path: '/',

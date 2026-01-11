@@ -9,7 +9,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { Form } from '@/components/form/Form';
-import { clientApiCall } from '@/lib/http';
+import { forgotPasswordAction } from '@/server/actions/auth/password-reset.actions';
 import { type StakeholderType } from '@/types/auth.types';
 import { type FormConfig, type FormValues } from '@/types/form.types';
 
@@ -19,7 +19,6 @@ import { type FormConfig, type FormValues } from '@/types/form.types';
 
 interface ForgotPasswordFormProps {
     role: StakeholderType;
-    apiEndpoint: string;
     loginPath: string;
     title?: string;
     subtitle?: string;
@@ -29,23 +28,15 @@ interface ForgotPasswordFormProps {
 // Component
 // =============================================
 
-export const ForgotPasswordForm = ({
-    apiEndpoint,
-    loginPath,
-    title = 'Forgot Password',
-    subtitle = "Enter your email and we'll send you a reset link",
-}: ForgotPasswordFormProps) => {
+export const ForgotPasswordForm = ({ role, loginPath, title = 'Forgot Password', subtitle = "Enter your email and we'll send you a reset link" }: ForgotPasswordFormProps) => {
     const [success, setSuccess] = useState(false);
     const [email, setEmail] = useState('');
 
-    // API call for forgot password
+    // Server action for forgot password
     const requestPasswordReset = async (values: FormValues) => {
         setEmail(String(values.email ?? ''));
-        return clientApiCall<void>({
-            method: 'POST',
-            url: apiEndpoint,
-            body: { email: values.email },
-        });
+        const result = await forgotPasswordAction({ email: String(values.email), stakeholder: role });
+        return result;
     };
 
     // Form configuration
@@ -85,10 +76,7 @@ export const ForgotPasswordForm = ({
                             If an account exists with <span className='font-medium text-white'>{email}</span>, you&apos;ll receive a password reset link shortly.
                         </p>
                     </div>
-                    <Link
-                        href={loginPath}
-                        className='block w-full rounded-xl bg-slate-700 py-3 text-center font-semibold text-white transition-all hover:bg-slate-600'
-                    >
+                    <Link href={loginPath} className='block w-full rounded-xl bg-slate-700 py-3 text-center font-semibold text-white transition-all hover:bg-slate-600'>
                         Back to Login
                     </Link>
                 </div>

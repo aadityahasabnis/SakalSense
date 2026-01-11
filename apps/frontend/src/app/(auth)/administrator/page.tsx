@@ -1,6 +1,5 @@
 import { LogoutButton } from '@/components/auth/LogoutButton';
 import { STAKEHOLDER, STAKEHOLDER_LABELS } from '@/constants/auth.constants';
-import { ADMINISTRATOR_API_ROUTES } from '@/constants/routes/administrator.routes';
 import { getCookieInfo, getCurrentUser } from '@/lib/auth';
 
 const AdministratorDashboardPage = async () => {
@@ -97,7 +96,7 @@ const AdministratorDashboardPage = async () => {
 
                 {/* Quick Actions */}
                 <div className='mt-6 flex justify-center'>
-                    <LogoutButton role='ADMINISTRATOR' apiEndpoint={ADMINISTRATOR_API_ROUTES.auth.logout} loginPath='/login/administrator' />
+                    <LogoutButton role='ADMINISTRATOR' loginPath='/login/administrator' />
                 </div>
             </div>
         </div>

@@ -5,10 +5,14 @@
 import { PrismaClient } from '@prisma/client';
 import { withAccelerate } from '@prisma/extension-accelerate';
 
-// Create Prisma client with Accelerate (Prisma 7 pattern)
+import { DATABASE_URL, IS_DEVELOPMENT } from '@/env';
+
+// Create Prisma client with Accelerate extension
+// DATABASE_URL (prisma://) is imported from env.ts for centralized config
+// DIRECT_URL (postgresql://) is used for migrations in prisma.config.ts
 const createPrismaClient = () =>
     new PrismaClient({
-        accelerateUrl: process.env.DATABASE_URL,
+        accelerateUrl: DATABASE_URL,
     }).$extends(withAccelerate());
 
 type PrismaClientExtended = ReturnType<typeof createPrismaClient>;
@@ -18,10 +22,9 @@ const globalForPrisma = globalThis as unknown as {
     prisma?: PrismaClientExtended;
 };
 
-export const prisma =
-    globalForPrisma.prisma ?? createPrismaClient();
+export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (process.env.NODE_ENV !== 'production') {
+if (IS_DEVELOPMENT) {
     globalForPrisma.prisma = prisma;
 }
 
