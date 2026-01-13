@@ -40,9 +40,9 @@ export const EMAIL_POOL_CONFIG = {
 
 // Retry configuration with exponential backoff
 export const EMAIL_RETRY_CONFIG = {
-    maxAttempts: 3,
-    initialDelayMs: 1000,
-    backoffMultiplier: 2,
+    maxAttempts: 20,
+    initialDelayMs: 500,
+    backoffMultiplier: 1.5,
 } as const;
 
 // Gmail rate limit awareness (500 emails/day for free accounts)
