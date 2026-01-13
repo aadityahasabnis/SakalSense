@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { Loader2 } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
@@ -33,19 +34,43 @@ const buttonVariants = cva(
     },
 );
 
-function Button({
-    className,
-    variant = 'default',
-    size = 'default',
-    asChild = false,
-    ...props
-}: React.ComponentProps<'button'> &
-    VariantProps<typeof buttonVariants> & {
-        asChild?: boolean;
-    }): React.JSX.Element {
+interface IButtonProps extends React.ComponentProps<'button'>, VariantProps<typeof buttonVariants> {
+    asChild?: boolean;
+    loading?: boolean;
+}
+
+function Button({ className, variant = 'default', size = 'default', asChild = false, loading = false, disabled, children, ...props }: IButtonProps): React.JSX.Element {
     const Comp = asChild ? Slot : 'button';
 
-    return <Comp data-slot='button' data-variant={variant} data-size={size} className={cn(buttonVariants({ variant, size, className }))} {...props} />;
+    // When asChild is true, Slot expects exactly one child element
+    // Loading spinner cannot be added in that case
+    if (asChild) {
+        return (
+            <Comp
+                data-slot='button'
+                data-variant={variant}
+                data-size={size}
+                className={cn(buttonVariants({ variant, size, className }))}
+                {...props}
+            >
+                {children}
+            </Comp>
+        );
+    }
+
+    return (
+        <Comp
+            data-slot='button'
+            data-variant={variant}
+            data-size={size}
+            disabled={Boolean(disabled) || loading}
+            className={cn(buttonVariants({ variant, size, className }))}
+            {...props}
+        >
+            {children}
+            {loading && <Loader2 className='ml-1 h-4 w-4 animate-spin' />}
+        </Comp>
+    );
 }
 
 export { Button, buttonVariants };

@@ -258,10 +258,10 @@ export function Form<TData = unknown>({ config, initialValues, className }: Form
             <div className="col-span-full">
                 <Button
                     type="submit"
-                    disabled={isSubmitting}
+                    loading={isSubmitting}
                     className={cn('w-full', config.submit.className)}
                 >
-                    {isSubmitting ? (config.submit.loadingLabel ?? 'Submitting...') : config.submit.label}
+                    {config.submit.label}
                 </Button>
             </div>
         </form>

@@ -15,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { LOADING_LABEL } from '@/constants/messages.constants';
+import { useDialog } from '@/hooks/useDialog';
 import { addNotificationAtom } from '@/jotai/atoms';
 import { createCategory, createDomain, createTopic, deleteCategory, deleteDomain, deleteTopic, getCategoryList, getDomainList, getTopicList, toggleDomainActive, updateCategory, updateDomain, updateTopic } from '@/server/actions/administrator/taxonomy-admin.actions';
 
@@ -55,8 +55,7 @@ export const DomainsClient = () => {
     const [formDomainId, setFormDomainId] = useState('');
 
     // Delete confirmation
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-    const [deleteTarget, setDeleteTarget] = useState<{ type: 'domain' | 'category' | 'topic'; id: string; name: string } | null>(null);
+    const { openDialog, DialogRenderer } = useDialog();
 
     // =============================================
     // Data Fetching
@@ -132,20 +131,20 @@ export const DomainsClient = () => {
     // =============================================
 
     const openDeleteDialog = (type: 'domain' | 'category' | 'topic', id: string, name: string) => {
-        setDeleteTarget({ type, id, name });
-        setDeleteDialogOpen(true);
-    };
-
-    const handleDelete = async () => {
-        if (!deleteTarget) return;
-        setSaving(true);
-        const result = deleteTarget.type === 'domain' ? await deleteDomain(deleteTarget.id) : deleteTarget.type === 'category' ? await deleteCategory(deleteTarget.id) : await deleteTopic(deleteTarget.id);
-        if (result.success) {
-            addNotification({ type: 'success', message: `${deleteTarget.type.charAt(0).toUpperCase() + deleteTarget.type.slice(1)} deleted` });
-            setDeleteDialogOpen(false);
-            void fetchData();
-        } else addNotification({ type: 'error', message: result.error ?? 'Delete failed' });
-        setSaving(false);
+        openDialog({
+            type: 'confirm',
+            title: `Delete ${type}?`,
+            description: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+            confirmLabel: 'Delete',
+            variant: 'destructive',
+            onConfirm: async () => {
+                const result = type === 'domain' ? await deleteDomain(id) : type === 'category' ? await deleteCategory(id) : await deleteTopic(id);
+                if (result.success) {
+                    addNotification({ type: 'success', message: `${type.charAt(0).toUpperCase() + type.slice(1)} deleted` });
+                    void fetchData();
+                } else addNotification({ type: 'error', message: result.error ?? 'Delete failed' });
+            },
+        });
     };
 
     // =============================================
@@ -301,24 +300,12 @@ export const DomainsClient = () => {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-zinc-600 text-zinc-300">Cancel</Button>
-                        <Button onClick={handleSave} disabled={saving} className="bg-amber-500 hover:bg-amber-600 text-black">{saving ? LOADING_LABEL.SAVING : 'Save'}</Button>
+                        <Button onClick={handleSave} loading={saving} className="bg-amber-500 hover:bg-amber-600 text-black">Save</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <DialogContent className="bg-zinc-800 border-zinc-700 text-white">
-                    <DialogHeader>
-                        <DialogTitle>Delete {deleteTarget?.type}?</DialogTitle>
-                    </DialogHeader>
-                    <p className="text-zinc-400">Are you sure you want to delete <span className="font-medium text-white">"{deleteTarget?.name}"</span>? This action cannot be undone.</p>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="border-zinc-600 text-zinc-300">Cancel</Button>
-                        <Button onClick={handleDelete} disabled={saving} variant="destructive">{saving ? 'Deleting...' : 'Delete'}</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {DialogRenderer()}
         </>
     );
 };

@@ -70,6 +70,7 @@ export interface IContentInput {
     metaDescription?: string;
     categoryId?: string;
     topicIds?: Array<string>;
+    isFeatured?: boolean;
 }
 
 // Series

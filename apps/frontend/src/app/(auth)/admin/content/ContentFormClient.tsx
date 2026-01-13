@@ -13,10 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { CONTENT_TYPE_LABELS, type ContentType, DIFFICULTY_LABELS, type DifficultyType } from '@/constants/content.constants';
-import { LOADING_LABEL } from '@/constants/messages.constants';
 import { addNotificationAtom } from '@/jotai/atoms';
 import { createContent, getContentById, publishContent, updateContent } from '@/server/actions/content/contentActions';
 import { getAllCategories, getDomains, getOrCreateTopic, searchTopics } from '@/server/actions/content/taxonomyActions';
@@ -49,7 +49,8 @@ export const ContentFormClient = ({ mode, contentId }: IContentFormClientProps) 
         title: '', slug: '', description: '', excerpt: '',
         type: 'ARTICLE', difficulty: 'BEGINNER', body: '',
         thumbnailUrl: '', coverImageUrl: '', sourceCodeUrl: '',
-        metaTitle: '', metaDescription: '', categoryId: '', topicIds: []
+        metaTitle: '', metaDescription: '', categoryId: '', topicIds: [],
+        isFeatured: false,
     });
 
     // Filtered categories based on selected domain
@@ -72,7 +73,7 @@ export const ContentFormClient = ({ mode, contentId }: IContentFormClientProps) 
             if (mode === 'edit' && contentId) {
                 const result = await getContentById(contentId);
                 if (result.success && result.data) {
-                    const { id: _id, creator: _creator, category, topics, viewCount: _viewCount, likeCount: _likeCount, commentCount: _commentCount, isFeatured: _isFeatured, featuredAt: _featuredAt, publishedAt: _publishedAt, createdAt: _createdAt, updatedAt: _updatedAt, status: _status, ...rest } = result.data;
+                    const { id: _id, creator: _creator, category, topics, viewCount: _viewCount, likeCount: _likeCount, commentCount: _commentCount, featuredAt: _featuredAt, publishedAt: _publishedAt, createdAt: _createdAt, updatedAt: _updatedAt, status: _status, ...rest } = result.data;
                     setFormData({ ...rest, categoryId: category?.id ?? '', topicIds: topics.map(t => t.id), body: rest.body ?? '' });
                     setSelectedTopics(topics);
                     // Set the domain if category exists
@@ -183,8 +184,8 @@ export const ContentFormClient = ({ mode, contentId }: IContentFormClientProps) 
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" disabled={saving}><Eye className="mr-2 h-4 w-4" />Preview</Button>
-                    <Button variant="outline" onClick={() => handleSave(false)} disabled={saving}><Save className="mr-2 h-4 w-4" />{saving ? LOADING_LABEL.SAVING : 'Save Draft'}</Button>
-                    <Button onClick={() => handleSave(true)} disabled={saving}><Send className="mr-2 h-4 w-4" />Publish</Button>
+                    <Button variant="outline" onClick={() => handleSave(false)} loading={saving}><Save className="mr-2 h-4 w-4" />Save Draft</Button>
+                    <Button onClick={() => handleSave(true)} loading={saving}><Send className="mr-2 h-4 w-4" />Publish</Button>
                 </div>
             </div>
 
@@ -292,6 +293,38 @@ export const ContentFormClient = ({ mode, contentId }: IContentFormClientProps) 
                             {formData.type === 'PROJECT' && (
                                 <div className="space-y-2"><label className="text-sm font-medium">Source Code URL</label><Input value={formData.sourceCodeUrl ?? ''} onChange={e => updateField('sourceCodeUrl', e.target.value)} placeholder="https://github.com/..." /></div>
                             )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Media & Visibility */}
+                    <Card>
+                        <CardHeader><CardTitle>Media & Visibility</CardTitle></CardHeader>
+                        <CardContent className="space-y-4">
+                            {/* Featured Toggle */}
+                            <div className="flex items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <label className="text-sm font-medium">Featured Content</label>
+                                    <p className="text-xs text-muted-foreground">Show this content prominently on the homepage</p>
+                                </div>
+                                <Switch
+                                    checked={formData.isFeatured ?? false}
+                                    onCheckedChange={(checked) => updateField('isFeatured', checked)}
+                                />
+                            </div>
+
+                            {/* Images */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Thumbnail URL</label>
+                                    <Input value={formData.thumbnailUrl ?? ''} onChange={e => updateField('thumbnailUrl', e.target.value)} placeholder="https://example.com/thumb.jpg" />
+                                    <p className="text-xs text-muted-foreground">Used in cards and lists (400x300 recommended)</p>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-medium">Cover Image URL</label>
+                                    <Input value={formData.coverImageUrl ?? ''} onChange={e => updateField('coverImageUrl', e.target.value)} placeholder="https://example.com/cover.jpg" />
+                                    <p className="text-xs text-muted-foreground">Used as header banner (1200x400 recommended)</p>
+                                </div>
+                            </div>
                         </CardContent>
                     </Card>
                 </TabsContent>

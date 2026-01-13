@@ -2,16 +2,11 @@
 // Administrator Admin Requests Page
 // =============================================
 
-import { AdminRequestsTable } from '@/components/administrator/AdminRequestsTable';
+import { AdminRequestsClient } from './AdminRequestsClient';
 
-const AdminRequestsPage = () => {
-    return (
-        <div className='min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900'>
-            <div className='container mx-auto py-8 px-4'>
-                <AdminRequestsTable />
-            </div>
-        </div>
-    );
-};
+export const metadata = { title: 'Admin Requests | SakalSense Administrator', description: 'Review and manage admin access requests' };
+
+// Note: No Suspense needed - DataTable handles loading internally with TanStack Query
+const AdminRequestsPage = () => <AdminRequestsClient />;
 
 export default AdminRequestsPage;
