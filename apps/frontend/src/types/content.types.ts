@@ -1,6 +1,6 @@
 // Content Types — Prisma Model Interfaces
 
-import { type Prisma } from '.prisma/client';
+import { type Prisma } from '@prisma/client';
 
 import { type ContentStatusType, type ContentType, type DifficultyType } from '@/constants/content.constants';
 
