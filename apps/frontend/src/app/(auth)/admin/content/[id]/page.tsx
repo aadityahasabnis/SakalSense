@@ -1,5 +1,7 @@
 import { Suspense } from 'react';
+
 import { ContentViewClient } from './ContentViewClient';
+
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface IViewPageProps { params: Promise<{ id: string }> }

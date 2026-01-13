@@ -21,7 +21,7 @@ export const ContentViewClient = ({ contentId }: IContentViewClientProps) => {
     const { data: content, loading, fetch } = useContentDetail(contentId);
     const { remove, publish, archive } = useContentActions();
 
-    useEffect(() => { fetch(); }, [fetch]);
+    useEffect(() => { void fetch(); }, [fetch]);
 
     const handlePublish = () => publish(contentId, () => router.refresh());
     const handleArchive = () => archive(contentId, () => router.refresh());
