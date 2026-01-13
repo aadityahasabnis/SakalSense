@@ -1,11 +1,11 @@
 {
     "name": "@sakalsense/frontend",
-    "version": "0.0.18",
+    "version": "0.0.19",
     "private": true,
     "type": "module",
     "scripts": {
         "dev": "next dev",
-        "build": "next build",
+        "build": "prisma generate && next build",
         "start": "next start",
         "lint": "eslint .",
         "type-check": "tsc --noEmit",
