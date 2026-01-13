@@ -1,6 +1,6 @@
 'use server';
 
-import { type Prisma } from '@prisma/client';
+import { type Prisma } from '.prisma/client';
 
 import { STAKEHOLDER } from '@/constants/auth.constants';
 import { type ContentStatusType, type DifficultyType } from '@/constants/content.constants';
