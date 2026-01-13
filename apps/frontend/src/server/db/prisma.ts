@@ -8,34 +8,23 @@ import { withAccelerate } from '@prisma/extension-accelerate';
 import { DATABASE_URL, IS_DEVELOPMENT } from '@/env';
 
 // Create Prisma client with Accelerate extension
-// DATABASE_URL (prisma://) is imported from env.ts for centralized config
-// DIRECT_URL (postgresql://) is used for migrations in prisma.config.ts
-const createPrismaClient = () =>
-    new PrismaClient({
-        accelerateUrl: DATABASE_URL,
+const createPrismaClient = () => {
+    const logLevel = IS_DEVELOPMENT ? ['warn', 'error'] as const : ['error'] as const;
+    return new PrismaClient({
+        log: [...logLevel],
+        accelerateUrl: DATABASE_URL
     }).$extends(withAccelerate());
+};
 
 type PrismaClientExtended = ReturnType<typeof createPrismaClient>;
 
 // Global singleton to prevent re-instantiating Prisma in dev
-const globalForPrisma = globalThis as unknown as {
-    prisma?: PrismaClientExtended;
-};
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClientExtended };
 
 export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
-if (IS_DEVELOPMENT) {
-    globalForPrisma.prisma = prisma;
-}
+if (IS_DEVELOPMENT) globalForPrisma.prisma = prisma;
 
-// =============================================
 // Stakeholder Model Mapping for reuse
-// =============================================
-
-export const STAKEHOLDER_MODELS = {
-    USER: prisma.user,
-    ADMIN: prisma.admin,
-    ADMINISTRATOR: prisma.administrator,
-} as const;
-
+export const STAKEHOLDER_MODELS = { USER: prisma.user, ADMIN: prisma.admin, ADMINISTRATOR: prisma.administrator } as const;
 export type StakeholderModelType = keyof typeof STAKEHOLDER_MODELS;

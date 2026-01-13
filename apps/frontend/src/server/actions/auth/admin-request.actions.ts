@@ -220,13 +220,16 @@ export const approveAdminRequest = async (params: IApproveRequestParams): Promis
         const tempPassword = randomBytes(8).toString('hex');
         const hashedPassword = await hashPassword(tempPassword);
 
+        // Verify the administrator exists before using as invitedById
+        const administratorExists = await prisma.administrator.findUnique({ where: { id: payload.userId } });
+
         // Create admin account
         const admin = await prisma.admin.create({
             data: {
                 email: request.email,
                 fullName: request.fullName,
                 password: hashedPassword,
-                invitedById: payload.userId,
+                ...(administratorExists && { invitedById: payload.userId }),
             },
         });
 

@@ -1,280 +1,122 @@
-# SakalSense Project Architecture
+# SakalSense — Unified Learning Platform
 
-> Next.js monorepo with integrated PostgreSQL backend using Prisma Accelerate.
+> **Everything is learnable. Everything is connected.**
 
 ---
 
-## Technology Stack
+## What is SakalSense?
 
-| Layer              | Technology                  | Purpose                           |
-| ------------------ | --------------------------- | --------------------------------- |
-| **Frontend**       | Next.js 16 (App Router)     | UI + Server Components            |
-| **Backend**        | Server Actions + API Routes | Business Logic                    |
-| **Database**       | PostgreSQL + Prisma         | Data Persistence                  |
-| **Cache/Sessions** | Redis                       | Session Storage, Rate Limiting    |
-| **Performance**    | Prisma Accelerate           | Connection Pooling, Query Caching |
+SakalSense = **GFG + Medium + Coursera-lite** — A unified learning platform with:
+
+- **Structured content** (Articles, Courses, Series, Tutorials)
+- **Verified creators** (Admin verification system)
+- **Progress-driven learning** (Streaks, completion tracking)
+- **Dynamic linking** (Content interconnected in multiple ways)
 
 ---
 
 ## Core Architecture
 
+| Layer    | Technology                     | Purpose                             |
+| -------- | ------------------------------ | ----------------------------------- |
+| Frontend | Next.js 16 (App Router)        | UI, Server Components, SEO          |
+| Database | PostgreSQL + Prisma Accelerate | Scalable data, connection pooling   |
+| Cache    | Redis                          | Sessions, rate limiting, caching    |
+| State    | Jotai + TanStack Query         | Global state, server state          |
+| Forms    | Config-driven `Form.tsx`       | Minimal code, consistent validation |
+| UI       | shadcn/ui                      | Professional, accessible components |
+
+---
+
+## 3-Tier Stakeholder Model
+
+| Role              | Registration | Session Limit | Capabilities                     |
+| ----------------- | ------------ | ------------- | -------------------------------- |
+| **USER**          | Public       | 1             | Browse, bookmark, track progress |
+| **ADMIN**         | Invite-only  | 2             | Create content, view analytics   |
+| **ADMINISTRATOR** | Seeded       | 2             | Verify admins, moderate content  |
+
+---
+
+## Content Types (6 Base + 6 Container)
+
+### Base Content (stored in `Content` model)
+
+| Type       | Description                     |
+| ---------- | ------------------------------- |
+| ARTICLE    | Technical documentation, guides |
+| BLOG       | Personal insights, opinions     |
+| TUTORIAL   | Step-by-step practical guides   |
+| CHEATSHEET | Concise reference sheets        |
+| NOTE       | Quick reference notes           |
+| PROJECT    | Hands-on projects with code     |
+
+### Container/Linking Models
+
+| Type          | Description                              |
+| ------------- | ---------------------------------------- |
+| SERIES        | Ordered collection of same-type content  |
+| COURSE        | Multi-section structured learning        |
+| LESSON        | Single unit within course section        |
+| QUIZ          | Attached or standalone assessment        |
+| PRACTICE      | Coding problems (attached or standalone) |
+| LEARNING PATH | Curated sequence across types            |
+
+---
+
+## Dynamic Content Linking
+
 ```
-apps/frontend/
-├── src/
-│   ├── app/                      # Next.js App Router
-│   │   ├── (authenticated)/      # Protected routes
-│   │   ├── (unAuth)/             # Public routes
-│   │   └── api/                  # API Routes (public endpoints)
-│   │       └── auth/             # Auth endpoints
-│   │
-│   ├── server/                   # Server-side code
-│   │   ├── actions/              # Server Actions
-│   │   │   ├── auth/             # Auth actions
-│   │   │   └── admin/            # Admin actions
-│   │   └── db/                   # Database layer
-│   │       ├── prisma.ts         # Prisma client
-│   │       └── redis.ts          # Redis client
-│   │
-│   ├── lib/                      # Shared utilities
-│   │   ├── auth/                 # Auth helpers (JWT, passwords)
-│   │   ├── mail/                 # Email service
-│   │   ├── rate-limit/           # Rate limiting
-│   │   └── interfaces/           # Type definitions
-│   │
-│   ├── constants/                # Application constants
-│   │   ├── auth.constants.ts
-│   │   ├── http.constants.ts
-│   │   └── paths/
-│   │
-│   ├── types/                    # TypeScript types
-│   └── components/               # React components
-│
-├── prisma/
-│   └── schema.prisma             # Database schema
-│
-└── scripts/                      # CLI utilities
+Content ─┬── belongs to ──► Series ──► can be linked to ──► Course Section
+         │
+         ├── can have ──► Attached Quiz
+         │
+         ├── can have ──► Attached Practice
+         │
+         └── can be linked as ──► Lesson Content
+```
+
+**Key Design:**
+
+- Same content reusable in multiple series/courses
+- Videos embedded within content (not standalone)
+- Sequential navigation (prev/next) in all grouped content
+- Two-mode assessments (attached OR standalone)
+
+---
+
+## Project Structure
+
+```
+apps/frontend/src/
+├── app/                     # Pages & Routes
+├── components/              # Shared components
+├── constants/               # All constants
+│   ├── content.constants.ts # Content types, statuses
+│   ├── domain.constants.ts  # 9 domains
+│   └── messages.constants.ts # UI text
+├── hooks/                   # Custom hooks
+├── jotai/                   # Global state atoms
+├── lib/                     # Utilities
+├── server/                  # Server actions, DB
+└── types/                   # TypeScript types
 ```
 
 ---
 
-## Stakeholder Architecture (3-Level)
+## Code Principles
 
-| Role              | Description  | Registration  | Session Limit |
-| ----------------- | ------------ | ------------- | ------------- |
-| **USER**          | End users    | Public signup | 1 concurrent  |
-| **ADMIN**         | Managers     | Invite-only   | 2 concurrent  |
-| **ADMINISTRATOR** | Super admins | Seeded only   | 2 concurrent  |
-
-### Database Models
-
-```prisma
-model User {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String
-  fullName    String
-  mobile      String?
-  avatarLink  String?
-  isActive    Boolean  @default(true)
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  @@map("users")
-}
-
-model Admin {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String
-  fullName    String
-  avatarLink  String?
-  invitedById String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  @@map("admins")
-}
-
-model Administrator {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  password    String
-  fullName    String
-  avatarLink  String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  @@map("administrators")
-}
-```
+1. **Minimal LOC** — Every line serves a purpose
+2. **Constants over magic strings** — All text in constants
+3. **Hooks for reuse** — Extract repeated logic
+4. **Config-driven forms** — Define config, render automatically
+5. **Type safety** — No `any`, use `TData` not `<T>`
 
 ---
 
-## API Strategy
+## Related Documentation
 
-### API Routes (Public Endpoints)
-
-Located in `app/api/` for:
-
-- Authentication (login, register, logout)
-- Password reset flows
-- Webhooks
-- Health checks
-
-```
-app/api/
-├── auth/
-│   ├── login/route.ts
-│   ├── register/route.ts
-│   ├── logout/route.ts
-│   ├── forgot-password/route.ts
-│   └── reset-password/route.ts
-├── health/route.ts
-└── mail/
-    └── test/route.ts
-```
-
-### Server Actions (Authenticated Operations)
-
-Located in `server/actions/` for:
-
-- Data mutations
-- Protected operations
-- Internal API calls
-
-```
-server/actions/
-├── auth/
-│   ├── session.actions.ts
-│   └── password.actions.ts
-├── admin/
-│   └── users.actions.ts
-└── mail/
-    └── index.ts
-```
-
----
-
-## Session Management
-
-Sessions stored in Redis with:
-
-- **Pattern**: `session:{role}:{userId}:{sessionId}`
-- **TTL**: 15 days
-- **Limit**: Role-based concurrent session limits
-
-### Session Flow
-
-```
-Login → Create Session (Redis) → Generate JWT → Set Cookie
-  ↓
-Request → Verify JWT → Validate Session (Redis) → Process
-  ↓
-Logout → Invalidate Session (Redis) → Clear Cookie
-```
-
----
-
-## Rate Limiting
-
-Sliding window algorithm with Redis Sorted Sets:
-
-| Tier     | Window | Max Requests | Use Case             |
-| -------- | ------ | ------------ | -------------------- |
-| Standard | 1 min  | 100          | General API          |
-| Strict   | 1 min  | 10           | Sensitive operations |
-| Auth     | 5 min  | 5            | Login attempts       |
-
----
-
-## Environment Variables
-
-```env
-# Database
-DATABASE_URL="prisma://accelerate.prisma-data.net/?api_key=..."
-DIRECT_URL="postgresql://user:pass@host:5432/sakalsense"
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_USERNAME=default
-REDIS_PASSWORD=
-
-# JWT
-JWT_SECRET=your-secret-key
-
-# Email
-GMAIL_ACCOUNT=your-email@gmail.com
-GMAIL_PASSWORD=your-app-password
-```
-
----
-
-## Development Workflow
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run development server
-pnpm dev
-
-# Generate Prisma client
-npx prisma generate
-
-# Run migrations
-npx prisma migrate dev
-
-# Build for production
-pnpm build
-```
-
----
-
-## Key Patterns
-
-### No Hardcoded Values
-
-```typescript
-// ✅ GOOD
-import { SESSION_CONFIG } from '@/constants/auth.constants';
-const ttl = SESSION_CONFIG.TTL;
-
-// ❌ BAD
-const ttl = 1296000;
-```
-
-### Type-Safe Constants
-
-```typescript
-export const STAKEHOLDER = {
-    USER: 'USER',
-    ADMIN: 'ADMIN',
-    ADMINISTRATOR: 'ADMINISTRATOR',
-} as const;
-
-export type StakeholderType = (typeof STAKEHOLDER)[keyof typeof STAKEHOLDER];
-```
-
-### Consistent Response Format
-
-```typescript
-interface IApiResponse<TData = unknown> {
-    success: boolean;
-    data?: TData;
-    error?: string;
-    message?: string;
-}
-```
-
----
-
-## Code Standards
-
-- **TypeScript Only** — No JavaScript files
-- **Arrow Functions** — No `function` declarations
-- **Explicit Types** — Return types for all exports
-- **No `any`** — Use `unknown` with type guards
-- **Const Assertions** — Use `as const` for literal types
-- **Single Responsibility** — One purpose per file/function
-- **Max 300 Lines** — Split larger files
+- [Content Model](./content-model.md) — Detailed content linking
+- [Architecture](./architecture.md) — Technical architecture
+- [Code Standards](./code-writing-instructions.md) — Code patterns
+- [Optimizations](./optimizations.md) — Performance guidelines

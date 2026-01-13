@@ -4,6 +4,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -14,7 +15,6 @@ datasource db {
 // Stakeholder Models (3-Level Architecture)
 // =============================================
 
-// User: End users - public registration, 1 session limit
 model User {
   id         String   @id @default(uuid())
   email      String   @unique
@@ -27,34 +27,57 @@ model User {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
+  // Engagement relations
+  bookmarks        Bookmark[]
+  contentProgress  ContentProgress[]
+  lessonProgress   LessonProgress[]
+  contentLikes     ContentLike[]
+  comments         Comment[]
+  topicsFollowed   TopicFollower[]
+  creatorsFollowed CreatorFollower[]
+  courseEnrollments CourseEnrollment[]
+  learningPathEnrollments LearningPathEnrollment[]
+  contentViews     ContentView[]
+  quizAttempts     QuizAttempt[]
+  practiceSubmissions PracticeSubmission[]
+  streak           UserStreak?
+
   @@index([email])
   @@map("users")
 }
 
-// Admin: Invite-only managers - 2 session limit
 model Admin {
   id          String         @id @default(uuid())
   email       String         @unique
   password    String
   fullName    String
   avatarLink  String?
+  bio         String?
   invitedById String?
   invitedBy   Administrator? @relation(fields: [invitedById], references: [id])
   isActive    Boolean        @default(true)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
+  // Creator relations
+  contents      Content[]
+  series        Series[]
+  courses       Course[]
+  quizzes       Quiz[]
+  practices     Practice[]
+  learningPaths LearningPath[]
+  followers     CreatorFollower[]
+
   @@index([email])
   @@map("admins")
 }
 
-// AdminInviteRequest: Pending admin invite requests
 model AdminInviteRequest {
   id        String   @id @default(uuid())
   email     String   @unique
   fullName  String
   reason    String?
-  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  status    String   @default("PENDING")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -63,7 +86,6 @@ model AdminInviteRequest {
   @@map("admin_requests")
 }
 
-// Administrator: Super admins - seeded only, 2 session limit
 model Administrator {
   id         String   @id @default(uuid())
   email      String   @unique
@@ -78,4 +100,606 @@ model Administrator {
 
   @@index([email])
   @@map("administrators")
+}
+
+// =============================================
+// Domain & Category - Hierarchical Organization
+// =============================================
+
+model Domain {
+  id          String     @id @default(uuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  icon        String?
+  order       Int        @default(0)
+  isActive    Boolean    @default(true)
+  categories  Category[]
+  createdAt   DateTime   @default(now())
+
+  @@index([slug])
+  @@map("domains")
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  icon        String?
+  domainId    String
+  domain      Domain     @relation(fields: [domainId], references: [id])
+  parentId    String?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+  contents    Content[]
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+
+  @@index([domainId])
+  @@index([slug])
+  @@map("categories")
+}
+
+model Topic {
+  id          String          @id @default(uuid())
+  name        String          @unique
+  slug        String          @unique
+  description String?
+  contents    ContentTopic[]
+  followers   TopicFollower[]
+  createdAt   DateTime        @default(now())
+
+  @@index([slug])
+  @@map("topics")
+}
+
+// =============================================
+// Content - Base Entity (6 Types)
+// =============================================
+
+model Content {
+  id              String    @id @default(uuid())
+  title           String
+  slug            String    @unique
+  description     String?
+  excerpt         String?
+  type            String    // ARTICLE, BLOG, TUTORIAL, CHEATSHEET, NOTE, PROJECT
+  status          String    @default("DRAFT")
+  difficulty      String    @default("BEGINNER")
+  body            Json?
+  thumbnailUrl    String?
+  coverImageUrl   String?
+  sourceCodeUrl   String?
+  metaTitle       String?
+  metaDescription String?
+
+  creatorId  String
+  creator    Admin     @relation(fields: [creatorId], references: [id])
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  topics     ContentTopic[]
+
+  // Linking
+  seriesItems   SeriesItem[]
+  lessonLinks   LessonContent[]
+
+  // Attachments
+  attachedQuiz     Quiz?     @relation("ContentQuiz")
+  attachedPractice Practice? @relation("ContentPractice")
+
+  // Engagement
+  views     ContentView[]
+  likes     ContentLike[]
+  comments  Comment[]
+  bookmarks Bookmark[]
+  progress  ContentProgress[]
+
+  // Counts (denormalized)
+  viewCount    Int @default(0)
+  likeCount    Int @default(0)
+  commentCount Int @default(0)
+
+  isFeatured  Boolean   @default(false)
+  featuredAt  DateTime?
+  publishedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([creatorId])
+  @@index([categoryId])
+  @@index([status])
+  @@index([type])
+  @@index([slug])
+  @@map("contents")
+}
+
+model ContentTopic {
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  topicId   String
+  topic     Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([contentId, topicId])
+  @@map("content_topics")
+}
+
+// =============================================
+// Series - Group Content in Sequence
+// =============================================
+
+model Series {
+  id           String       @id @default(uuid())
+  title        String
+  slug         String       @unique
+  description  String?
+  thumbnailUrl String?
+  contentType  String       // ARTICLE, TUTORIAL, CHEATSHEET, PROJECT
+  creatorId    String
+  creator      Admin        @relation(fields: [creatorId], references: [id])
+  items        SeriesItem[]
+  sectionLinks CourseSectionSeries[]
+  status       String       @default("DRAFT")
+  isPublished  Boolean      @default(false)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([slug])
+  @@map("series")
+}
+
+model SeriesItem {
+  id        String  @id @default(uuid())
+  seriesId  String
+  series    Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  order     Int
+
+  @@unique([seriesId, contentId])
+  @@unique([seriesId, order])
+  @@map("series_items")
+}
+
+// =============================================
+// Course - Multi-Section Structured Learning
+// =============================================
+
+model Course {
+  id             String            @id @default(uuid())
+  title          String
+  slug           String            @unique
+  description    String?
+  thumbnailUrl   String?
+  difficulty     String            @default("BEGINNER")
+  estimatedHours Int?
+  creatorId      String
+  creator        Admin             @relation(fields: [creatorId], references: [id])
+  sections       CourseSection[]
+  enrollments    CourseEnrollment[]
+  finalQuizId    String?           @unique
+  finalQuiz      Quiz?             @relation("CourseFinalQuiz", fields: [finalQuizId], references: [id])
+  status         String            @default("DRAFT")
+  isPublished    Boolean           @default(false)
+  isFeatured     Boolean           @default(false)
+  publishedAt    DateTime?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([slug])
+  @@map("courses")
+}
+
+model CourseSection {
+  id           String                @id @default(uuid())
+  courseId     String
+  course       Course                @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  order        Int
+  lessons      Lesson[]
+  linkedSeries CourseSectionSeries[]
+  quizId       String?               @unique
+  quiz         Quiz?                 @relation("SectionQuiz", fields: [quizId], references: [id])
+
+  @@unique([courseId, order])
+  @@map("course_sections")
+}
+
+model CourseSectionSeries {
+  id        String        @id @default(uuid())
+  sectionId String
+  section   CourseSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  seriesId  String
+  series    Series        @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  order     Int
+
+  @@unique([sectionId, seriesId])
+  @@map("course_section_series")
+}
+
+model Lesson {
+  id          String          @id @default(uuid())
+  sectionId   String
+  section     CourseSection   @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int
+  body        Json?
+  linkedContent LessonContent[]
+  quizId      String?         @unique
+  quiz        Quiz?           @relation("LessonQuiz", fields: [quizId], references: [id])
+  isFree      Boolean         @default(false)
+  progress    LessonProgress[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([sectionId, order])
+  @@map("lessons")
+}
+
+model LessonContent {
+  id        String  @id @default(uuid())
+  lessonId  String
+  lesson    Lesson  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  order     Int
+
+  @@unique([lessonId, contentId])
+  @@map("lesson_contents")
+}
+
+// =============================================
+// Learning Path - Curated Sequences
+// =============================================
+
+model LearningPath {
+  id             String                @id @default(uuid())
+  title          String
+  slug           String                @unique
+  description    String?
+  thumbnailUrl   String?
+  difficulty     String                @default("BEGINNER")
+  estimatedHours Int?
+  creatorId      String
+  creator        Admin                 @relation(fields: [creatorId], references: [id])
+  items          LearningPathItem[]
+  enrollments    LearningPathEnrollment[]
+  isFeatured     Boolean               @default(false)
+  isPublished    Boolean               @default(false)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@index([slug])
+  @@map("learning_paths")
+}
+
+model LearningPathItem {
+  id           String       @id @default(uuid())
+  pathId       String
+  path         LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  itemType     String       // CONTENT, SERIES, COURSE
+  contentId    String?
+  seriesId     String?
+  courseId     String?
+  order        Int
+
+  @@unique([pathId, order])
+  @@map("learning_path_items")
+}
+
+model LearningPathEnrollment {
+  id         String       @id @default(uuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pathId     String
+  path       LearningPath @relation(fields: [pathId], references: [id], onDelete: Cascade)
+  progress   Int          @default(0)
+  enrolledAt DateTime     @default(now())
+  completedAt DateTime?
+
+  @@unique([userId, pathId])
+  @@index([userId])
+  @@map("learning_path_enrollments")
+}
+
+// =============================================
+// Quiz - Attached or Standalone
+// =============================================
+
+model Quiz {
+  id           String        @id @default(uuid())
+  title        String
+  slug         String        @unique
+  description  String?
+  isStandalone Boolean       @default(false)
+  attachedToId String?       @unique
+  attachedTo   Content?      @relation("ContentQuiz", fields: [attachedToId], references: [id])
+  attachedLesson  Lesson?    @relation("LessonQuiz")
+  attachedSection CourseSection? @relation("SectionQuiz")
+  attachedCourse  Course?    @relation("CourseFinalQuiz")
+  creatorId    String
+  creator      Admin         @relation(fields: [creatorId], references: [id])
+  sections     QuizSection[]
+  attempts     QuizAttempt[]
+  status       String        @default("DRAFT")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([slug])
+  @@map("quizzes")
+}
+
+model QuizSection {
+  id          String         @id @default(uuid())
+  quizId      String
+  quiz        Quiz           @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  order       Int
+  questions   QuizQuestion[]
+
+  @@unique([quizId, order])
+  @@map("quiz_sections")
+}
+
+model QuizQuestion {
+  id          String      @id @default(uuid())
+  sectionId   String
+  section     QuizSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  question    String
+  type        String      // MCQ, TRUE_FALSE, SHORT_ANSWER
+  options     Json?
+  answer      String?
+  explanation String?
+  points      Int         @default(1)
+  order       Int
+
+  @@unique([sectionId, order])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          String   @id @default(uuid())
+  quizId      String
+  quiz        Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  answers     Json
+  score       Int
+  maxScore    Int
+  completedAt DateTime @default(now())
+
+  @@index([quizId])
+  @@index([userId])
+  @@map("quiz_attempts")
+}
+
+// =============================================
+// Practice - Attached or Standalone
+// =============================================
+
+model Practice {
+  id           String            @id @default(uuid())
+  title        String
+  slug         String            @unique
+  description  String?
+  isStandalone Boolean           @default(false)
+  attachedToId String?           @unique
+  attachedTo   Content?          @relation("ContentPractice", fields: [attachedToId], references: [id])
+  creatorId    String
+  creator      Admin             @relation(fields: [creatorId], references: [id])
+  sections     PracticeSection[]
+  status       String            @default("DRAFT")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([slug])
+  @@map("practices")
+}
+
+model PracticeSection {
+  id         String            @id @default(uuid())
+  practiceId String
+  practice   Practice          @relation(fields: [practiceId], references: [id], onDelete: Cascade)
+  title      String
+  order      Int
+  problems   PracticeProblem[]
+
+  @@unique([practiceId, order])
+  @@map("practice_sections")
+}
+
+model PracticeProblem {
+  id          String               @id @default(uuid())
+  sectionId   String
+  section     PracticeSection      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  difficulty  String               @default("BEGINNER")
+  starterCode String?
+  solution    String?
+  testCases   Json?
+  hints       Json?
+  order       Int
+  submissions PracticeSubmission[]
+
+  @@unique([sectionId, order])
+  @@map("practice_problems")
+}
+
+model PracticeSubmission {
+  id          String          @id @default(uuid())
+  problemId   String
+  problem     PracticeProblem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code        String
+  status      String          // PASSED, FAILED, PARTIAL
+  passedTests Int
+  totalTests  Int
+  submittedAt DateTime        @default(now())
+
+  @@index([problemId])
+  @@index([userId])
+  @@map("practice_submissions")
+}
+
+// =============================================
+// User Engagement
+// =============================================
+
+model ContentProgress {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId    String
+  content      Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  progress     Int       @default(0)
+  lastPosition Int?
+  timeSpent    Int       @default(0)
+  lastViewedAt DateTime  @default(now())
+  startedAt    DateTime  @default(now())
+  completedAt  DateTime?
+
+  @@unique([userId, contentId])
+  @@index([userId])
+  @@map("content_progress")
+}
+
+model LessonProgress {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId     String
+  lesson       Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completed    Boolean   @default(false)
+  lastViewedAt DateTime  @default(now())
+  completedAt  DateTime?
+
+  @@unique([userId, lessonId])
+  @@index([userId])
+  @@map("lesson_progress")
+}
+
+model CourseEnrollment {
+  id               String    @id @default(uuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId         String
+  course           Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress         Int       @default(0)
+  currentLessonId  String?
+  enrolledAt       DateTime  @default(now())
+  completedAt      DateTime?
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@map("course_enrollments")
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@index([userId])
+  @@map("bookmarks")
+}
+
+model ContentLike {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, contentId])
+  @@index([userId])
+  @@map("content_likes")
+}
+
+model TopicFollower {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId   String
+  topic     Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, topicId])
+  @@index([userId])
+  @@map("topic_followers")
+}
+
+model CreatorFollower {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creatorId String
+  creator   Admin    @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, creatorId])
+  @@index([userId])
+  @@map("creator_followers")
+}
+
+model Comment {
+  id        String    @id @default(uuid())
+  body      String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentId String
+  content   Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  parentId  String?
+  parent    Comment?  @relation("CommentThread", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentThread")
+  likeCount Int       @default(0)
+  isEdited  Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([contentId])
+  @@index([userId])
+  @@map("comments")
+}
+
+// =============================================
+// Analytics
+// =============================================
+
+model ContentView {
+  id        String   @id @default(uuid())
+  contentId String
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ip        String?
+  userAgent String?
+  referrer  String?
+  duration  Int?
+  createdAt DateTime @default(now())
+
+  @@index([contentId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("content_views")
+}
+
+model UserStreak {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak Int      @default(0)
+  longestStreak Int      @default(0)
+  lastActiveAt  DateTime @default(now())
+
+  @@map("user_streaks")
 }
