@@ -5,6 +5,9 @@ import { type JSX, type ReactNode, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
+import { Toaster } from '@/components/notifications/Toaster';
+
 interface ProvidersProps {
     children: ReactNode;
 }
@@ -25,9 +28,12 @@ export const Providers = ({ children }: ProvidersProps): JSX.Element => {
     );
 
     return (
-        <QueryClientProvider client={queryClient}>
-            {children}
-            <SpeedInsights />
-        </QueryClientProvider>
+        <ThemeProvider>
+            <QueryClientProvider client={queryClient}>
+                {children}
+                <Toaster />
+                <SpeedInsights />
+            </QueryClientProvider>
+        </ThemeProvider>
     );
 };

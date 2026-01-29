@@ -122,4 +122,108 @@
     body {
         @apply bg-background text-foreground;
     }
+    
+    /* Professional Typography */
+    h1, h2, h3, h4, h5, h6 {
+        @apply font-sans font-semibold tracking-tight;
+    }
+    
+    /* Smooth Scrolling */
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    /* Selection Colors */
+    ::selection {
+        @apply bg-primary/20 text-foreground;
+    }
+    
+    /* Focus Visible */
+    *:focus-visible {
+        @apply outline-2 outline-offset-2 outline-ring;
+    }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        @apply w-2 h-2;
+    }
+    
+    ::-webkit-scrollbar-track {
+        @apply bg-muted;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        @apply bg-muted-foreground/30 rounded-full;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        @apply bg-muted-foreground/50;
+    }
+}
+
+/* Professional Content Styles */
+@layer components {
+    .prose {
+        @apply max-w-none text-foreground;
+    }
+    
+    .prose h1 {
+        @apply text-4xl font-bold mb-4 mt-8 text-foreground;
+    }
+    
+    .prose h2 {
+        @apply text-3xl font-bold mb-3 mt-6 text-foreground;
+    }
+    
+    .prose h3 {
+        @apply text-2xl font-semibold mb-2 mt-4 text-foreground;
+    }
+    
+    .prose p {
+        @apply mb-4 leading-7 text-foreground/90;
+    }
+    
+    .prose a {
+        @apply text-primary underline-offset-4 hover:underline;
+    }
+    
+    .prose code {
+        @apply px-1.5 py-0.5 rounded bg-muted text-sm font-mono;
+    }
+    
+    .prose pre {
+        @apply p-4 rounded-lg bg-muted overflow-x-auto;
+    }
+    
+    .prose pre code {
+        @apply p-0 bg-transparent;
+    }
+    
+    .prose blockquote {
+        @apply border-l-4 border-primary pl-4 italic text-muted-foreground;
+    }
+    
+    .prose ul, .prose ol {
+        @apply ml-6 mb-4;
+    }
+    
+    .prose li {
+        @apply mb-2;
+    }
+    
+    .prose img {
+        @apply rounded-lg my-6;
+    }
+    
+    .prose table {
+        @apply w-full border-collapse my-6;
+    }
+    
+    .prose th {
+        @apply bg-muted px-4 py-2 text-left font-semibold;
+    }
+    
+    .prose td {
+        @apply border-t px-4 py-2;
+    }
 }

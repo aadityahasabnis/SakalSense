@@ -39,19 +39,24 @@ export interface IContentWithRelations extends IContent {
     topics: Array<{ id: string; name: string; slug: string }>;
 }
 
-// Content list item (for tables)
+// Content list item (for tables and cards)
 export interface IContentListItem {
     id: string;
     title: string;
     slug: string;
+    description?: string;
+    excerpt?: string;
     type: ContentType;
     status: ContentStatusType;
     difficulty: DifficultyType;
+    thumbnailUrl?: string;
     viewCount: number;
     likeCount: number;
+    commentCount?: number;
     createdAt: Date;
     publishedAt?: Date;
-    creator: { fullName: string };
+    creator: { fullName: string; avatarLink?: string };
+    category?: { id: string; name: string; slug: string };
 }
 
 // Content create/update input

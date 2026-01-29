@@ -7,6 +7,7 @@
 import { cookies } from 'next/headers';
 
 import { type IJWTPayload } from './interfaces';
+import { getCachedUser, setCachedUser } from './auth-cache';
 
 import { AUTH_COOKIE, type STAKEHOLDER } from '@/constants/auth.constants';
 
@@ -44,7 +45,7 @@ const decodeJWT = (token: string): IJWTPayload | null => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Server Actions
 // =============================================
-// Get Current User
+// Get Current User (with Redis caching)
 // =============================================
 
 export const getCurrentUser = async (stakeholder: StakeholderKey): Promise<ICurrentUser | null> => {
@@ -56,7 +57,22 @@ export const getCurrentUser = async (stakeholder: StakeholderKey): Promise<ICurr
     const payload = decodeJWT(token);
     if (!payload) return null;
 
-    return { ...payload, stakeholder };
+    const userId = payload.userId;
+    if (!userId) return null;
+
+    // Try to get from cache first
+    const cached = await getCachedUser(stakeholder, userId);
+    if (cached) {
+        return cached;
+    }
+
+    // Build user object
+    const user: ICurrentUser = { ...payload, stakeholder };
+
+    // Cache for future requests (fire-and-forget)
+    void setCachedUser(stakeholder, userId, user);
+
+    return user;
 };
 
 // =============================================
