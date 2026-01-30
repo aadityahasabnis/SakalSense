@@ -128,3 +128,114 @@ export const publishCourse = async (id: string): Promise<ICourseActionResponse> 
         return { success: true, data: { id } };
     } catch (error) { console.error('publishCourse error:', error); return { success: false, error: 'Failed to publish course' }; }
 };
+
+// =============================================
+// Public Course Actions
+// =============================================
+
+// Get published courses for public browsing
+export const getPublishedCourses = async (filters: {
+    search?: string;
+    difficulty?: DifficultyType;
+    page?: number;
+    limit?: number;
+    sortBy?: 'latest' | 'popular' | 'title';
+}): Promise<ICourseListResponse> => {
+    try {
+        const { search = '', difficulty, page = 1, limit = 12, sortBy = 'latest' } = filters;
+
+        const where = {
+            isPublished: true,
+            status: 'PUBLISHED',
+            ...(search && {
+                OR: [
+                    { title: { contains: search, mode: 'insensitive' as const } },
+                    { description: { contains: search, mode: 'insensitive' as const } },
+                ],
+            }),
+            ...(difficulty && { difficulty }),
+        };
+
+        // Determine sort order
+        const orderBy: Record<string, 'asc' | 'desc'> = 
+            sortBy === 'popular' ? { enrollments: { _count: 'desc' } } as unknown as Record<string, 'asc' | 'desc'> :
+            sortBy === 'title' ? { title: 'asc' } :
+            { publishedAt: 'desc' };
+
+        const [data, total] = await Promise.all([
+            prisma.course.findMany({
+                where,
+                select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    description: true,
+                    thumbnailUrl: true,
+                    difficulty: true,
+                    estimatedHours: true,
+                    publishedAt: true,
+                    creator: {
+                        select: {
+                            fullName: true,
+                            avatarLink: true,
+                        },
+                    },
+                    _count: {
+                        select: {
+                            enrollments: true,
+                            sections: true,
+                        },
+                    },
+                },
+                orderBy,
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.course.count({ where }),
+        ]);
+
+        return { success: true, data: data as unknown as Array<ICourse>, total };
+    } catch (error) {
+        console.error('getPublishedCourses error:', error);
+        return { success: false, error: 'Failed to fetch courses' };
+    }
+};
+
+// Get course by slug for public viewing
+export const getCourseBySlug = async (slug: string): Promise<ICourseResponse> => {
+    try {
+        const course = await prisma.course.findFirst({
+            where: { slug, isPublished: true },
+            include: {
+                creator: {
+                    select: { id: true, fullName: true, avatarLink: true },
+                },
+                sections: {
+                    orderBy: { order: 'asc' },
+                    include: {
+                        lessons: {
+                            orderBy: { order: 'asc' },
+                            select: {
+                                id: true,
+                                title: true,
+                                description: true,
+                                order: true,
+                                isFree: true,
+                            },
+                        },
+                    },
+                },
+                _count: {
+                    select: { enrollments: true },
+                },
+            },
+        });
+
+        if (!course) return { success: false, error: 'Course not found' };
+
+        return { success: true, data: course as unknown as ICourse & { sections: Array<ICourseSection & { lessons: Array<ILesson> }> } };
+    } catch (error) {
+        console.error('getCourseBySlug error:', error);
+        return { success: false, error: 'Failed to fetch course' };
+    }
+};

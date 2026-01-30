@@ -7,16 +7,17 @@ import { useEffect, useState } from 'react';
 
 import { Clock, Eye, Share2, User } from 'lucide-react';
 
+import { ContentBodyRenderer } from '@/components/content/ContentBodyRenderer';
+import { BookmarkButton } from '@/components/engagement/BookmarkButton';
+import { LikeButton } from '@/components/engagement/LikeButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { BookmarkButton } from '@/components/engagement/BookmarkButton';
-import { LikeButton } from '@/components/engagement/LikeButton';
 import {
     CONTENT_TYPE_LABELS,
+    type ContentType,
     DIFFICULTY_COLORS,
     DIFFICULTY_LABELS,
-    type ContentType,
     type DifficultyType,
 } from '@/constants/content.constants';
 import { type IContentWithRelations } from '@/types/content.types';
@@ -190,25 +191,4 @@ export const ContentReader = ({ content, userId }: IContentReaderProps) => {
             </div>
         </article>
     );
-};
-
-// Simple content body renderer (can be enhanced with proper rich text editor)
-const ContentBodyRenderer = ({ body }: { body: unknown }) => {
-    // If body is stored as HTML string
-    if (typeof body === 'string') {
-        return <div dangerouslySetInnerHTML={{ __html: body }} />;
-    }
-
-    // If body is stored as JSON (e.g., from a rich text editor)
-    if (typeof body === 'object' && body !== null) {
-        // Convert to readable format - this is a placeholder
-        // In production, use a proper renderer like TipTap, Slate, or ProseMirror
-        return (
-            <div className='whitespace-pre-wrap'>
-                {JSON.stringify(body, null, 2)}
-            </div>
-        );
-    }
-
-    return null;
 };

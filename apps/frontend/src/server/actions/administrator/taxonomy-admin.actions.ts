@@ -39,7 +39,7 @@ export const getDomainList = async (): Promise<IDomainListResponse> => {
     const admin = await verifyAdministrator();
     if (!admin) return { success: false, error: 'Unauthorized' };
     try {
-        const data = await prisma.domain.findMany({ orderBy: { order: 'asc' }, include: { _count: { select: { categories: true } } }, cacheStrategy: { ttl: 60, swr: 30 } });
+        const data = await prisma.domain.findMany({ orderBy: { order: 'asc' }, include: { _count: { select: { categories: true } } } });
         return { success: true, data: data as IDomainListResponse['data'] };
     } catch (error) { console.error('getDomainList error:', error); return { success: false, error: 'Failed to fetch domains' }; }
 };
@@ -113,7 +113,7 @@ export const getCategoryList = async (domainId?: string): Promise<ICategoryListR
     if (!admin) return { success: false, error: 'Unauthorized' };
     try {
         const where = domainId ? { domainId } : {};
-        const data = await prisma.category.findMany({ where, orderBy: [{ domain: { order: 'asc' } }, { order: 'asc' }], include: { domain: { select: { name: true } }, _count: { select: { contents: true } } }, cacheStrategy: { ttl: 60, swr: 30 } });
+        const data = await prisma.category.findMany({ where, orderBy: [{ domain: { order: 'asc' } }, { order: 'asc' }], include: { domain: { select: { name: true } }, _count: { select: { contents: true } } } });
         return { success: true, data: data as ICategoryListResponse['data'] };
     } catch (error) { console.error('getCategoryList error:', error); return { success: false, error: 'Failed to fetch categories' }; }
 };
@@ -180,7 +180,7 @@ export const getTopicList = async (): Promise<ITopicListResponse> => {
     const admin = await verifyAdministrator();
     if (!admin) return { success: false, error: 'Unauthorized' };
     try {
-        const data = await prisma.topic.findMany({ orderBy: { name: 'asc' }, include: { _count: { select: { contents: true, followers: true } } }, cacheStrategy: { ttl: 60, swr: 30 } });
+        const data = await prisma.topic.findMany({ orderBy: { name: 'asc' }, include: { _count: { select: { contents: true, followers: true } } } });
         return { success: true, data: data as ITopicListResponse['data'] };
     } catch (error) { console.error('getTopicList error:', error); return { success: false, error: 'Failed to fetch topics' }; }
 };

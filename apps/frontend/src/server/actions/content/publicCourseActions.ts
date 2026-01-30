@@ -96,7 +96,6 @@ export const getPublicCourseList = async (filters: {
                 orderBy: { publishedAt: 'desc' },
                 skip: (page - 1) * limit,
                 take: limit,
-                cacheStrategy: { ttl: 60, swr: 30 },
             }),
             prisma.course.count({ where }),
         ]);
@@ -209,7 +208,6 @@ export const getFeaturedCourses = async (limit = 5): Promise<IPublicCourseListRe
             },
             orderBy: { publishedAt: 'desc' },
             take: limit,
-            cacheStrategy: { ttl: 300, swr: 60 },
         });
 
         return {

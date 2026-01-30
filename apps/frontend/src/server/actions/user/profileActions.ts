@@ -9,6 +9,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { invalidateUserCache } from '@/lib/auth-cache';
 import { type IApiResponse } from '@/lib/interfaces';
 import { prisma } from '@/server/db/prisma';
+import { hashPassword, verifyPassword } from '@/server/utils/password';
 
 // =============================================
 // Type Definitions
@@ -398,6 +399,137 @@ export const deleteUserAccount = async (): Promise<IApiResponse<{ success: boole
         return {
             success: false,
             error: 'Failed to delete account',
+        };
+    }
+};
+
+// =============================================
+// Get Yearly Activity (for Activity Calendar)
+// =============================================
+
+export const getYearlyActivity = async (
+    year?: number,
+): Promise<IApiResponse<Array<{ date: string; count: number }>>> => {
+    try {
+        const currentUser = await getCurrentUser(STAKEHOLDER.USER);
+        if (!currentUser) {
+            return {
+                success: false,
+                error: 'Unauthorized',
+            };
+        }
+
+        const targetYear = year ?? new Date().getFullYear();
+        const startDate = new Date(targetYear, 0, 1);
+        const endDate = new Date(targetYear, 11, 31, 23, 59, 59);
+
+        // Get all content views for the year
+        const views = await prisma.contentView.findMany({
+            where: {
+                userId: currentUser.userId,
+                createdAt: {
+                    gte: startDate,
+                    lte: endDate,
+                },
+            },
+            select: {
+                createdAt: true,
+            },
+        });
+
+        // Group by date
+        const activityMap = new Map<string, number>();
+        views.forEach((view) => {
+            const dateStr = view.createdAt.toISOString().split('T')[0] ?? '';
+            activityMap.set(dateStr, (activityMap.get(dateStr) ?? 0) + 1);
+        });
+
+        // Convert to array
+        const activity = Array.from(activityMap.entries()).map(([date, count]) => ({
+            date,
+            count,
+        }));
+
+        return {
+            success: true,
+            data: activity,
+        };
+    } catch (error) {
+        console.error('[getYearlyActivity] Error:', error);
+        return {
+            success: false,
+            error: 'Failed to fetch activity data',
+        };
+    }
+};
+
+// =============================================
+// Change Password
+// =============================================
+
+export const changePassword = async (input: {
+    currentPassword: string;
+    newPassword: string;
+}): Promise<IApiResponse<{ success: boolean }>> => {
+    try {
+        const currentUser = await getCurrentUser(STAKEHOLDER.USER);
+        if (!currentUser) {
+            return {
+                success: false,
+                error: 'Unauthorized',
+            };
+        }
+
+        // Validate new password
+        if (input.newPassword.length < 8) {
+            return {
+                success: false,
+                error: 'Password must be at least 8 characters',
+            };
+        }
+
+        // Get user with password
+        const user = await prisma.user.findUnique({
+            where: { id: currentUser.userId },
+            select: { password: true },
+        });
+
+        if (!user) {
+            return {
+                success: false,
+                error: 'User not found',
+            };
+        }
+
+        // Verify current password
+        const isValid = await verifyPassword(input.currentPassword, user.password);
+
+        if (!isValid) {
+            return {
+                success: false,
+                error: 'Current password is incorrect',
+            };
+        }
+
+        // Hash new password
+        const hashedPassword = await hashPassword(input.newPassword);
+
+        // Update password
+        await prisma.user.update({
+            where: { id: currentUser.userId },
+            data: { password: hashedPassword },
+        });
+
+        return {
+            success: true,
+            data: { success: true },
+            message: 'Password changed successfully',
+        };
+    } catch (error) {
+        console.error('[changePassword] Error:', error);
+        return {
+            success: false,
+            error: 'Failed to change password',
         };
     }
 };

@@ -17,11 +17,11 @@ export const getDashboardStats = async (): Promise<IDashboardResponse> => {
 
         const where = { creatorId: user.userId };
         const [totalContent, publishedCount, draftCount, reviewCount, aggregate] = await Promise.all([
-            prisma.content.count({ where, cacheStrategy: { ttl: 30 } }),
-            prisma.content.count({ where: { ...where, status: 'PUBLISHED' }, cacheStrategy: { ttl: 30 } }),
-            prisma.content.count({ where: { ...where, status: 'DRAFT' }, cacheStrategy: { ttl: 30 } }),
-            prisma.content.count({ where: { ...where, status: 'REVIEW' }, cacheStrategy: { ttl: 30 } }),
-            prisma.content.aggregate({ where, _sum: { viewCount: true, likeCount: true }, cacheStrategy: { ttl: 30 } }),
+            prisma.content.count({ where }),
+            prisma.content.count({ where: { ...where, status: 'PUBLISHED' } }),
+            prisma.content.count({ where: { ...where, status: 'DRAFT' } }),
+            prisma.content.count({ where: { ...where, status: 'REVIEW' } }),
+            prisma.content.aggregate({ where, _sum: { viewCount: true, likeCount: true } }),
         ]);
 
         return { success: true, data: { totalContent, totalViews: aggregate._sum.viewCount ?? 0, totalLikes: aggregate._sum.likeCount ?? 0, publishedCount, draftCount, reviewCount } };

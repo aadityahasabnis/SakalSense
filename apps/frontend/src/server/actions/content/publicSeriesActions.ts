@@ -79,7 +79,6 @@ export const getPublicSeriesList = async (filters: {
                 orderBy: { createdAt: 'desc' },
                 skip: (page - 1) * limit,
                 take: limit,
-                cacheStrategy: { ttl: 60, swr: 30 },
             }),
             prisma.series.count({ where }),
         ]);
@@ -193,7 +192,6 @@ export const getFeaturedSeries = async (limit = 5): Promise<IPublicSeriesListRes
             },
             orderBy: { createdAt: 'desc' },
             take: limit,
-            cacheStrategy: { ttl: 300, swr: 60 },
         });
 
         return {

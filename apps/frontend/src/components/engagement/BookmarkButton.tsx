@@ -1,10 +1,10 @@
 'use client';
 // =============================================
-// BookmarkButton - Interactive bookmark button
+// BookmarkButton - Interactive bookmark button with no flickering
 // =============================================
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bookmark } from 'lucide-react';
+import { Bookmark, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { checkBookmarkStatus, toggleBookmark } from '@/server/actions/engagement/bookmarkActions';
@@ -15,6 +15,8 @@ interface IBookmarkButtonProps {
     variant?: 'default' | 'ghost' | 'outline';
     size?: 'sm' | 'default' | 'lg';
     showLabel?: boolean;
+    // Initial state from server to prevent flickering
+    initialIsBookmarked?: boolean;
 }
 
 export const BookmarkButton = ({
@@ -22,19 +24,25 @@ export const BookmarkButton = ({
     variant = 'ghost',
     size = 'default',
     showLabel = false,
+    initialIsBookmarked,
 }: IBookmarkButtonProps) => {
     const queryClient = useQueryClient();
 
-    // Fetch bookmark status
-    const { data: bookmarkData } = useQuery({
+    // Fetch bookmark status with placeholderData to prevent flickering
+    const { data: bookmarkData, isLoading } = useQuery({
         queryKey: ['bookmark-status', contentId],
         queryFn: () => checkBookmarkStatus(contentId),
-        staleTime: 30000, // 30 seconds
+        staleTime: 60000, // 1 minute - longer stale time to reduce refetches
+        gcTime: 300000, // 5 minutes
+        // Use placeholderData instead of showing false while loading
+        placeholderData: initialIsBookmarked !== undefined
+            ? { success: true, data: { isBookmarked: initialIsBookmarked } }
+            : undefined,
     });
 
     const isBookmarked = bookmarkData?.data?.isBookmarked ?? false;
 
-    // Toggle bookmark mutation
+    // Toggle bookmark mutation with optimistic updates
     const { mutate: handleToggleBookmark, isPending } = useMutation({
         mutationFn: () => toggleBookmark(contentId),
         onMutate: async () => {
@@ -45,16 +53,12 @@ export const BookmarkButton = ({
             const previous = queryClient.getQueryData(['bookmark-status', contentId]);
 
             // Optimistically update
-            queryClient.setQueryData(['bookmark-status', contentId], (old: typeof bookmarkData) => {
-                if (!old) return old;
-                return {
-                    ...old,
-                    data: {
-                        ...old.data,
-                        isBookmarked: !old.data?.isBookmarked,
-                    },
-                };
-            });
+            queryClient.setQueryData(['bookmark-status', contentId], (old: typeof bookmarkData) => ({
+                success: true,
+                data: {
+                    isBookmarked: !old?.data?.isBookmarked,
+                },
+            }));
 
             return { previous };
         },
@@ -71,6 +75,16 @@ export const BookmarkButton = ({
         },
     });
 
+    // Show skeleton while initial loading (only if no placeholder)
+    if (isLoading && initialIsBookmarked === undefined) {
+        return (
+            <Button variant={variant} size={size} disabled className='gap-2'>
+                <Loader2 className='h-4 w-4 animate-spin' />
+                {showLabel && <span className='text-muted-foreground'>...</span>}
+            </Button>
+        );
+    }
+
     return (
         <Button
             variant={variant}
@@ -80,9 +94,17 @@ export const BookmarkButton = ({
             className='gap-2'
         >
             <Bookmark
-                className={cn('h-4 w-4 transition-all', isBookmarked && 'fill-current text-primary')}
+                className={cn(
+                    'h-4 w-4 transition-all',
+                    isBookmarked && 'fill-current text-primary',
+                    isPending && 'opacity-50'
+                )}
             />
-            {showLabel && <span>{isBookmarked ? 'Bookmarked' : 'Bookmark'}</span>}
+            {showLabel && (
+                <span className={cn(isPending && 'opacity-50')}>
+                    {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+                </span>
+            )}
         </Button>
     );
 };

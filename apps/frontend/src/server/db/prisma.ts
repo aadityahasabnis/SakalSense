@@ -1,18 +1,20 @@
 // =============================================
-// Prisma Client - Singleton with Accelerate Extension
+// Prisma Client - Singleton with Prisma Accelerate
 // =============================================
 
 import { PrismaClient } from '@prisma/client';
 import { withAccelerate } from '@prisma/extension-accelerate';
 
-import { DATABASE_URL, IS_DEVELOPMENT } from '@/env';
+import { IS_DEVELOPMENT } from '@/env';
 
 // Create Prisma client with Accelerate extension
+// Prisma 7+ requires accelerateUrl when using prisma:// connection strings
 const createPrismaClient = () => {
     const logLevel = IS_DEVELOPMENT ? ['warn', 'error'] as const : ['error'] as const;
     return new PrismaClient({
         log: [...logLevel],
-        accelerateUrl: DATABASE_URL
+        // Required for Prisma 7 with Accelerate (prisma:// URLs)
+        accelerateUrl: process.env.DATABASE_URL,
     }).$extends(withAccelerate());
 };
 

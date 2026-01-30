@@ -1,33 +1,40 @@
 'use client';
 // =============================================
-// ProfileClient - User profile and settings page
+// ProfileClient - Professional user profile page
+// Clean, minimal design with all features properly integrated
 // =============================================
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    ArrowLeft,
     Bookmark,
-    Calendar,
+    BookmarkX,
+    Check,
+    ChevronRight,
+    Clock,
     Edit2,
+    Eye,
+    Flame,
     Heart,
+    Key,
     Loader2,
     Mail,
     MessageSquare,
-    Phone,
     Save,
+    Settings,
     Shield,
     Trash2,
+    TrendingUp,
     Trophy,
     User,
-    X,
-    Zap
 } from 'lucide-react';
 
 import { LogoutButton } from '@/components/auth/LogoutButton';
+import { ActivityCalendar, MonthCalendar } from '@/components/profile/ActivityCalendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,32 +50,72 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
+import { getUserBookmarks, toggleBookmark } from '@/server/actions/engagement/bookmarkActions';
 import {
+    changePassword,
     deleteUserAccount,
     getUserProfile,
     getUserReadingHistory,
     getUserStatsSummary,
+    getYearlyActivity,
     type IUpdateProfileInput,
     updateUserProfile
 } from '@/server/actions/user/profileActions';
 
+// =============================================
+// Types
+// =============================================
+
 interface IProfileClientProps {
     userId: string;
 }
+
+type TabValue = 'overview' | 'activity' | 'bookmarks' | 'settings';
 
 // =============================================
 // Main Component
 // =============================================
 
 export const ProfileClient = ({ userId }: IProfileClientProps) => {
+    return (
+        <Suspense fallback={<ProfileSkeleton />}>
+            <ProfileClientInner userId={userId} />
+        </Suspense>
+    );
+};
+
+const ProfileClientInner = ({ userId }: IProfileClientProps) => {
+    const router = useRouter();
+    const searchParams = useSearchParams();
     const queryClient = useQueryClient();
+
+    // URL-based tab state
+    const currentTab = (searchParams.get('tab') as TabValue) ?? 'overview';
+
+    const handleTabChange = (tab: string) => {
+        router.push(`/profile?tab=${tab}`, { scroll: false });
+    };
+
+    // Local state
     const [isEditing, setIsEditing] = useState(false);
     const [editForm, setEditForm] = useState<IUpdateProfileInput>({});
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [deleteConfirmText, setDeleteConfirmText] = useState('');
+    const [activityYear, setActivityYear] = useState(new Date().getFullYear());
+
+    // Password change state
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+    });
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState(false);
 
     // Fetch profile
     const { data: profileData, isLoading: profileLoading } = useQuery({
@@ -91,7 +138,22 @@ export const ProfileClient = ({ userId }: IProfileClientProps) => {
         staleTime: 60000,
     });
 
-    // Update profile mutation
+    // Fetch yearly activity for calendar
+    const { data: activityData, isLoading: activityLoading } = useQuery({
+        queryKey: ['user-yearly-activity', userId, activityYear],
+        queryFn: () => getYearlyActivity(activityYear),
+        staleTime: 300000,
+    });
+
+    // Fetch bookmarks (lazy load when tab is active)
+    const { data: bookmarksData, isLoading: bookmarksLoading } = useQuery({
+        queryKey: ['user-bookmarks', userId],
+        queryFn: () => getUserBookmarks({ page: 1, limit: 20 }),
+        staleTime: 60000,
+        enabled: currentTab === 'bookmarks',
+    });
+
+    // Mutations
     const updateMutation = useMutation({
         mutationFn: (input: IUpdateProfileInput) => updateUserProfile(input),
         onSuccess: (result) => {
@@ -103,7 +165,6 @@ export const ProfileClient = ({ userId }: IProfileClientProps) => {
         },
     });
 
-    // Delete account mutation
     const deleteMutation = useMutation({
         mutationFn: deleteUserAccount,
         onSuccess: (result) => {
@@ -113,10 +174,39 @@ export const ProfileClient = ({ userId }: IProfileClientProps) => {
         },
     });
 
+    const passwordMutation = useMutation({
+        mutationFn: changePassword,
+        onSuccess: (result) => {
+            if (result.success) {
+                setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                setPasswordError('');
+                setPasswordSuccess(true);
+                setTimeout(() => setPasswordSuccess(false), 3000);
+            } else {
+                setPasswordError(result.error ?? 'Failed to change password');
+            }
+        },
+        onError: () => {
+            setPasswordError('Failed to change password');
+        },
+    });
+
+    const removeBookmarkMutation = useMutation({
+        mutationFn: toggleBookmark,
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: ['user-bookmarks'] });
+            void queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+        },
+    });
+
+    // Data
     const profile = profileData?.data;
     const stats = statsData?.data;
     const history = historyData?.data?.history ?? [];
+    const bookmarks = bookmarksData?.data ?? [];
+    const yearlyActivity = activityData?.data ?? [];
 
+    // Handlers
     const handleStartEdit = () => {
         if (profile) {
             setEditForm({
@@ -143,6 +233,26 @@ export const ProfileClient = ({ userId }: IProfileClientProps) => {
         }
     };
 
+    const handlePasswordChange = () => {
+        setPasswordError('');
+        setPasswordSuccess(false);
+
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            setPasswordError('Passwords do not match');
+            return;
+        }
+
+        if (passwordForm.newPassword.length < 8) {
+            setPasswordError('Password must be at least 8 characters');
+            return;
+        }
+
+        passwordMutation.mutate({
+            currentPassword: passwordForm.currentPassword,
+            newPassword: passwordForm.newPassword,
+        });
+    };
+
     const getInitials = (name: string) => {
         return name
             .split(' ')
@@ -154,10 +264,20 @@ export const ProfileClient = ({ userId }: IProfileClientProps) => {
 
     const formatDate = (date: Date) => {
         return new Date(date).toLocaleDateString('en-US', {
+            month: 'short',
             year: 'numeric',
-            month: 'long',
-            day: 'numeric',
         });
+    };
+
+    // Format time spent in human-readable format
+    const formatTimeSpent = (minutes: number): string => {
+        if (minutes < 60) return `${minutes}m`;
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        if (hours < 24) return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+        const days = Math.floor(hours / 24);
+        const remainingHours = hours % 24;
+        return remainingHours > 0 ? `${days}d ${remainingHours}h` : `${days}d`;
     };
 
     // Loading state
@@ -167,7 +287,7 @@ export const ProfileClient = ({ userId }: IProfileClientProps) => {
 
     if (!profile) {
         return (
-            <div className="flex min-h-screen items-center justify-center">
+            <div className="flex min-h-[60vh] items-center justify-center">
                 <Card className="w-full max-w-md">
                     <CardContent className="py-12 text-center">
                         <User className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
@@ -185,463 +305,606 @@ export const ProfileClient = ({ userId }: IProfileClientProps) => {
     }
 
     return (
-        <div className="min-h-screen bg-background">
-            <div className="mx-auto max-w-5xl px-4 py-8">
-                {/* Back Button */}
-                <div className="mb-6">
-                    <Button variant="ghost" size="sm" asChild>
-                        <Link href="/explore">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Back to Explore
-                        </Link>
-                    </Button>
+        <div className="space-y-6">
+            {/* Profile Header */}
+            <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-4">
+                    <Avatar className="h-20 w-20 border-2 border-border">
+                        <AvatarImage src={profile.avatarLink ?? undefined} alt={profile.fullName} />
+                        <AvatarFallback className="text-xl font-medium">
+                            {getInitials(profile.fullName)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <h1 className="text-xl font-semibold">{profile.fullName}</h1>
+                            {profile.isVerified && (
+                                <Badge variant="secondary" className="h-5 gap-1 px-1.5 text-xs">
+                                    <Shield className="h-3 w-3" />
+                                    Verified
+                                </Badge>
+                            )}
+                        </div>
+                        <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                            <Mail className="h-3.5 w-3.5" />
+                            {profile.email}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            Member since {formatDate(profile.createdAt)}
+                        </p>
+                    </div>
                 </div>
-
-                {/* Profile Header Card */}
-                <Card className="mb-6">
-                    <CardContent className="pt-6">
-                        <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-                            {/* Avatar */}
-                            <Avatar className="h-24 w-24">
-                                <AvatarImage src={profile.avatarLink ?? undefined} alt={profile.fullName} />
-                                <AvatarFallback className="text-2xl">
-                                    {getInitials(profile.fullName)}
-                                </AvatarFallback>
-                            </Avatar>
-
-                            {/* Profile Info */}
-                            <div className="flex-1 text-center sm:text-left">
-                                <div className="mb-2 flex items-center justify-center gap-2 sm:justify-start">
-                                    <h1 className="text-2xl font-bold">{profile.fullName}</h1>
-                                    {profile.isVerified && (
-                                        <Badge variant="secondary" className="gap-1">
-                                            <Shield className="h-3 w-3" />
-                                            Verified
-                                        </Badge>
-                                    )}
-                                </div>
-
-                                <div className="mb-4 space-y-1 text-sm text-muted-foreground">
-                                    <div className="flex items-center justify-center gap-2 sm:justify-start">
-                                        <Mail className="h-4 w-4" />
-                                        <span>{profile.email}</span>
-                                    </div>
-                                    {profile.mobile && (
-                                        <div className="flex items-center justify-center gap-2 sm:justify-start">
-                                            <Phone className="h-4 w-4" />
-                                            <span>{profile.mobile}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex items-center justify-center gap-2 sm:justify-start">
-                                        <Calendar className="h-4 w-4" />
-                                        <span>Member since {formatDate(profile.createdAt)}</span>
-                                    </div>
-                                </div>
-
-                                {/* Quick Stats */}
-                                <div className="flex flex-wrap items-center justify-center gap-4 sm:justify-start">
-                                    <StatBadge icon={Zap} value={profile.stats.currentStreak} label="day streak" />
-                                    <StatBadge icon={Trophy} value={profile.stats.longestStreak} label="best streak" />
-                                    <StatBadge icon={Bookmark} value={profile.stats.bookmarksCount} label="bookmarks" />
-                                    <StatBadge icon={Heart} value={profile.stats.likesCount} label="likes" />
-                                    <StatBadge icon={MessageSquare} value={profile.stats.commentsCount} label="comments" />
-                                </div>
-                            </div>
-
-                            {/* Edit Button */}
-                            <div className="flex gap-2">
-                                {!isEditing ? (
-                                    <Button variant="outline" onClick={handleStartEdit}>
-                                        <Edit2 className="mr-2 h-4 w-4" />
-                                        Edit Profile
-                                    </Button>
-                                ) : (
-                                    <>
-                                        <Button
-                                            variant="outline"
-                                            onClick={handleCancelEdit}
-                                            disabled={updateMutation.isPending}
-                                        >
-                                            <X className="mr-2 h-4 w-4" />
-                                            Cancel
-                                        </Button>
-                                        <Button
-                                            onClick={handleSaveProfile}
-                                            disabled={updateMutation.isPending}
-                                        >
-                                            {updateMutation.isPending ? (
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Save className="mr-2 h-4 w-4" />
-                                            )}
-                                            Save
-                                        </Button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Edit Form */}
-                        {isEditing && (
-                            <>
-                                <Separator className="my-6" />
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="fullName">Full Name</Label>
-                                        <Input
-                                            id="fullName"
-                                            value={editForm.fullName ?? ''}
-                                            onChange={(e) => setEditForm((prev) => ({ ...prev, fullName: e.target.value }))}
-                                            placeholder="Your full name"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="mobile">Phone Number</Label>
-                                        <Input
-                                            id="mobile"
-                                            value={editForm.mobile ?? ''}
-                                            onChange={(e) => setEditForm((prev) => ({ ...prev, mobile: e.target.value }))}
-                                            placeholder="+1234567890"
-                                        />
-                                    </div>
-                                    <div className="space-y-2 sm:col-span-2">
-                                        <Label htmlFor="avatarLink">Avatar URL</Label>
-                                        <Input
-                                            id="avatarLink"
-                                            value={editForm.avatarLink ?? ''}
-                                            onChange={(e) => setEditForm((prev) => ({ ...prev, avatarLink: e.target.value }))}
-                                            placeholder="https://example.com/avatar.jpg"
-                                        />
-                                    </div>
-                                    {updateMutation.isError && (
-                                        <p className="text-sm text-destructive sm:col-span-2">
-                                            Failed to update profile. Please try again.
-                                        </p>
-                                    )}
-                                </div>
-                            </>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Tabs for Activity & Settings */}
-                <Tabs defaultValue="activity" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="activity">Activity</TabsTrigger>
-                        <TabsTrigger value="progress">Progress</TabsTrigger>
-                        <TabsTrigger value="settings">Settings</TabsTrigger>
-                    </TabsList>
-
-                    {/* Activity Tab */}
-                    <TabsContent value="activity" className="space-y-4">
-                        {/* Weekly Activity */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">This Week&apos;s Activity</CardTitle>
-                                <CardDescription>Your learning activity over the past 7 days</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {statsLoading ? (
-                                    <div className="flex gap-2">
-                                        {Array.from({ length: 7 }).map((_, i) => (
-                                            <Skeleton key={i} className="h-20 flex-1" />
-                                        ))}
-                                    </div>
-                                ) : stats?.thisWeekActivity ? (
-                                    <div className="flex gap-2">
-                                        {stats.thisWeekActivity.map((day) => (
-                                            <ActivityDay key={day.date} date={day.date} count={day.count} />
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">No activity data available</p>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        {/* Recent Reading History */}
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-lg">Recent Reading</CardTitle>
-                                    <CardDescription>Content you&apos;ve been reading</CardDescription>
-                                </div>
-                                <Button variant="ghost" size="sm" asChild>
-                                    <Link href="/dashboard/history">View All</Link>
-                                </Button>
-                            </CardHeader>
-                            <CardContent>
-                                {historyLoading ? (
-                                    <div className="space-y-3">
-                                        {Array.from({ length: 3 }).map((_, i) => (
-                                            <Skeleton key={i} className="h-16 w-full" />
-                                        ))}
-                                    </div>
-                                ) : history.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {history.map((item) => (
-                                            <Link
-                                                key={item.id}
-                                                href={`/content/${item.content.slug}`}
-                                                className="flex items-center gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50"
-                                            >
-                                                <div className="flex-1">
-                                                    <p className="font-medium">{item.content.title}</p>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {item.isCompleted ? 'Completed' : `${item.progress}% complete`}
-                                                    </p>
-                                                </div>
-                                                <Badge variant={item.isCompleted ? 'default' : 'secondary'}>
-                                                    {item.content.type}
-                                                </Badge>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">
-                                        No reading history yet. Start exploring content!
-                                    </p>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Progress Tab */}
-                    <TabsContent value="progress" className="space-y-4">
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <ProgressCard
-                                title="Content Read"
-                                value={stats?.contentRead ?? 0}
-                                description="Articles and tutorials completed"
-                                loading={statsLoading}
-                            />
-                            <ProgressCard
-                                title="Courses Completed"
-                                value={stats?.coursesCompleted ?? 0}
-                                description="Full courses finished"
-                                loading={statsLoading}
-                            />
-                            <ProgressCard
-                                title="Time Spent"
-                                value={`${stats?.totalTimeSpent ?? 0}m`}
-                                description="Total learning time"
-                                loading={statsLoading}
-                            />
-                            <ProgressCard
-                                title="Courses Enrolled"
-                                value={profile.stats.coursesEnrolled}
-                                description="Courses you're taking"
-                                loading={false}
-                            />
-                        </div>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Streak Stats</CardTitle>
-                                <CardDescription>Keep your learning streak going!</CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-8">
-                                    <div className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Zap className="h-8 w-8 text-orange-500" />
-                                            <span className="text-4xl font-bold">{profile.stats.currentStreak}</span>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">Current Streak</p>
-                                    </div>
-                                    <Separator orientation="vertical" className="h-16" />
-                                    <div className="text-center">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <Trophy className="h-8 w-8 text-yellow-500" />
-                                            <span className="text-4xl font-bold">{profile.stats.longestStreak}</span>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground">Longest Streak</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-
-                    {/* Settings Tab */}
-                    <TabsContent value="settings" className="space-y-4">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-lg">Account Actions</CardTitle>
-                                <CardDescription>Manage your account</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                {/* Logout */}
-                                <div className="flex items-center justify-between rounded-lg border p-4">
-                                    <div>
-                                        <p className="font-medium">Log Out</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Sign out of your account on this device
-                                        </p>
-                                    </div>
-                                    <LogoutButton role="USER" loginPath="/login" />
-                                </div>
-
-                                {/* Delete Account */}
-                                <div className="flex items-center justify-between rounded-lg border border-destructive/50 p-4">
-                                    <div>
-                                        <p className="font-medium text-destructive">Delete Account</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Permanently delete your account and all data
-                                        </p>
-                                    </div>
-                                    <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                                        <DialogTrigger asChild>
-                                            <Button variant="destructive">
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                Delete
-                                            </Button>
-                                        </DialogTrigger>
-                                        <DialogContent>
-                                            <DialogHeader>
-                                                <DialogTitle>Delete Account</DialogTitle>
-                                                <DialogDescription>
-                                                    This action cannot be undone. This will permanently delete your
-                                                    account and remove all your data from our servers.
-                                                </DialogDescription>
-                                            </DialogHeader>
-                                            <div className="space-y-4 py-4">
-                                                <p className="text-sm">
-                                                    Type <strong>DELETE</strong> to confirm:
-                                                </p>
-                                                <Input
-                                                    value={deleteConfirmText}
-                                                    onChange={(e) => setDeleteConfirmText(e.target.value)}
-                                                    placeholder="DELETE"
-                                                />
-                                            </div>
-                                            <DialogFooter>
-                                                <Button
-                                                    variant="outline"
-                                                    onClick={() => setShowDeleteDialog(false)}
-                                                >
-                                                    Cancel
-                                                </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    onClick={handleDeleteAccount}
-                                                    disabled={deleteConfirmText !== 'DELETE' || deleteMutation.isPending}
-                                                >
-                                                    {deleteMutation.isPending ? (
-                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                    )}
-                                                    Delete Account
-                                                </Button>
-                                            </DialogFooter>
-                                        </DialogContent>
-                                    </Dialog>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </TabsContent>
-                </Tabs>
+                <Button variant="outline" size="sm" onClick={handleStartEdit}>
+                    <Edit2 className="mr-2 h-3.5 w-3.5" />
+                    Edit Profile
+                </Button>
             </div>
+
+            {/* Edit Profile Dialog */}
+            <Dialog open={isEditing} onOpenChange={setIsEditing}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Profile</DialogTitle>
+                        <DialogDescription>
+                            Update your profile information
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="fullName">Full Name</Label>
+                            <Input
+                                id="fullName"
+                                value={editForm.fullName ?? ''}
+                                onChange={(e) => setEditForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="mobile">Phone Number</Label>
+                            <Input
+                                id="mobile"
+                                value={editForm.mobile ?? ''}
+                                onChange={(e) => setEditForm((prev) => ({ ...prev, mobile: e.target.value }))}
+                                placeholder="+1234567890"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="avatarLink">Avatar URL</Label>
+                            <Input
+                                id="avatarLink"
+                                value={editForm.avatarLink ?? ''}
+                                onChange={(e) => setEditForm((prev) => ({ ...prev, avatarLink: e.target.value }))}
+                                placeholder="https://..."
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={handleCancelEdit}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSaveProfile} disabled={updateMutation.isPending}>
+                            {updateMutation.isPending ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Save className="mr-2 h-4 w-4" />
+                            )}
+                            Save
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Stats Overview Cards */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard
+                    icon={<Flame className="h-4 w-4" />}
+                    label="Current Streak"
+                    value={profile.stats.currentStreak}
+                    suffix="days"
+                    highlight={profile.stats.currentStreak > 0}
+                />
+                <StatCard
+                    icon={<Trophy className="h-4 w-4" />}
+                    label="Best Streak"
+                    value={profile.stats.longestStreak}
+                    suffix="days"
+                />
+                <StatCard
+                    icon={<Clock className="h-4 w-4" />}
+                    label="Time Spent"
+                    value={formatTimeSpent(stats?.totalTimeSpent ?? 0)}
+                    loading={statsLoading}
+                />
+                <StatCard
+                    icon={<Check className="h-4 w-4" />}
+                    label="Completed"
+                    value={stats?.contentRead ?? 0}
+                    suffix="items"
+                    loading={statsLoading}
+                />
+            </div>
+
+            {/* Tabs */}
+            <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-4">
+                <TabsList className="h-9 w-full justify-start rounded-lg bg-muted/50 p-1">
+                    <TabsTrigger value="overview" className="text-xs">Overview</TabsTrigger>
+                    <TabsTrigger value="activity" className="text-xs">Activity</TabsTrigger>
+                    <TabsTrigger value="bookmarks" className="text-xs">Bookmarks</TabsTrigger>
+                    <TabsTrigger value="settings" className="text-xs">Settings</TabsTrigger>
+                </TabsList>
+
+                {/* Overview Tab */}
+                <TabsContent value="overview" className="space-y-4">
+                    <div className="grid gap-4 lg:grid-cols-3">
+                        {/* Activity Summary */}
+                        <div className="lg:col-span-2">
+                            <ActivityCalendar
+                                activityData={yearlyActivity}
+                                year={activityYear}
+                                onYearChange={setActivityYear}
+                                loading={activityLoading}
+                            />
+                        </div>
+
+                        {/* Quick Stats */}
+                        <div className="space-y-4">
+                            <Card>
+                                <CardHeader className="pb-2">
+                                    <CardTitle className="text-sm font-medium">Engagement</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Bookmark className="h-3.5 w-3.5" />
+                                            Bookmarks
+                                        </span>
+                                        <span className="text-sm font-medium">{profile.stats.bookmarksCount}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <Heart className="h-3.5 w-3.5" />
+                                            Likes
+                                        </span>
+                                        <span className="text-sm font-medium">{profile.stats.likesCount}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <MessageSquare className="h-3.5 w-3.5" />
+                                            Comments
+                                        </span>
+                                        <span className="text-sm font-medium">{profile.stats.commentsCount}</span>
+                                    </div>
+                                    <Separator />
+                                    <div className="flex items-center justify-between">
+                                        <span className="flex items-center gap-2 text-sm text-muted-foreground">
+                                            <TrendingUp className="h-3.5 w-3.5" />
+                                            Courses Enrolled
+                                        </span>
+                                        <span className="text-sm font-medium">{profile.stats.coursesEnrolled}</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Current Month */}
+                            <MonthCalendar
+                                activityData={yearlyActivity}
+                                loading={activityLoading}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Recent History */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between pb-2">
+                            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs" asChild>
+                                <Link href="/profile?tab=activity">
+                                    View all
+                                    <ChevronRight className="ml-1 h-3 w-3" />
+                                </Link>
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {historyLoading ? (
+                                <div className="space-y-2">
+                                    {Array.from({ length: 3 }).map((_, i) => (
+                                        <Skeleton key={i} className="h-12 w-full" />
+                                    ))}
+                                </div>
+                            ) : history.length > 0 ? (
+                                <div className="space-y-1">
+                                    {history.slice(0, 5).map((item) => (
+                                        <Link
+                                            key={item.id}
+                                            href={`/content/${item.content.slug}`}
+                                            className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/50"
+                                        >
+                                            <div className="flex-1 min-w-0">
+                                                <p className="truncate text-sm font-medium">
+                                                    {item.content.title}
+                                                </p>
+                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                    <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                                                        {item.content.type}
+                                                    </Badge>
+                                                    <span>{item.progress}%</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-20">
+                                                <Progress value={item.progress} className="h-1" />
+                                            </div>
+                                            {item.isCompleted && (
+                                                <Check className="h-4 w-4 shrink-0 text-emerald-500" />
+                                            )}
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="py-4 text-center text-sm text-muted-foreground">
+                                    No activity yet. Start learning!
+                                </p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Activity Tab */}
+                <TabsContent value="activity" className="space-y-4">
+                    <ActivityCalendar
+                        activityData={yearlyActivity}
+                        year={activityYear}
+                        onYearChange={setActivityYear}
+                        loading={activityLoading}
+                    />
+
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium">Reading History</CardTitle>
+                            <CardDescription className="text-xs">
+                                Your complete learning journey
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {historyLoading ? (
+                                <div className="space-y-2">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <Skeleton key={i} className="h-14 w-full" />
+                                    ))}
+                                </div>
+                            ) : history.length > 0 ? (
+                                <div className="space-y-1">
+                                    {history.map((item) => (
+                                        <Link
+                                            key={item.id}
+                                            href={`/content/${item.content.slug}`}
+                                            className="flex items-center gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                                        >
+                                            <div className="flex-1 min-w-0">
+                                                <p className="truncate font-medium">{item.content.title}</p>
+                                                <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                                                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+                                                        {item.content.type}
+                                                    </Badge>
+                                                    <span className="flex items-center gap-1">
+                                                        <Eye className="h-3 w-3" />
+                                                        {item.isCompleted ? 'Completed' : `${item.progress}%`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-24">
+                                                    <Progress value={item.progress} className="h-1.5" />
+                                                </div>
+                                                {item.isCompleted && (
+                                                    <Check className="h-4 w-4 text-emerald-500" />
+                                                )}
+                                            </div>
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-8 text-center">
+                                    <Eye className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+                                    <p className="text-sm text-muted-foreground">No reading history yet</p>
+                                    <Button className="mt-4" variant="outline" size="sm" asChild>
+                                        <Link href="/articles">Start Reading</Link>
+                                    </Button>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Bookmarks Tab */}
+                <TabsContent value="bookmarks" className="space-y-4">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium">Your Bookmarks</CardTitle>
+                            <CardDescription className="text-xs">
+                                {bookmarksData?.total ?? 0} saved items
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {bookmarksLoading ? (
+                                <div className="space-y-2">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                        <Skeleton key={i} className="h-16 w-full" />
+                                    ))}
+                                </div>
+                            ) : bookmarks.length > 0 ? (
+                                <div className="space-y-2">
+                                    {bookmarks.map((bookmark) => (
+                                        <div
+                                            key={bookmark.id}
+                                            className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50"
+                                        >
+                                            <Link
+                                                href={`/content/${bookmark.content.slug}`}
+                                                className="flex flex-1 items-center gap-3 min-w-0"
+                                            >
+                                                {bookmark.content.thumbnailUrl ? (
+                                                    <img
+                                                        src={bookmark.content.thumbnailUrl}
+                                                        alt=""
+                                                        className="h-12 w-16 shrink-0 rounded object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="flex h-12 w-16 shrink-0 items-center justify-center rounded bg-muted">
+                                                        <Bookmark className="h-4 w-4 text-muted-foreground" />
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <p className="truncate text-sm font-medium">
+                                                        {bookmark.content.title}
+                                                    </p>
+                                                    <Badge variant="outline" className="mt-1 h-4 px-1 text-[10px]">
+                                                        {bookmark.content.type}
+                                                    </Badge>
+                                                </div>
+                                            </Link>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                                                onClick={() => removeBookmarkMutation.mutate(bookmark.content.id)}
+                                                disabled={removeBookmarkMutation.isPending}
+                                            >
+                                                <BookmarkX className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="py-8 text-center">
+                                    <Bookmark className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+                                    <p className="text-sm text-muted-foreground">No bookmarks yet</p>
+                                    <Button className="mt-4" variant="outline" size="sm" asChild>
+                                        <Link href="/articles">Browse Content</Link>
+                                    </Button>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* Settings Tab */}
+                <TabsContent value="settings" className="space-y-4">
+                    {/* Change Password */}
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                                <Key className="h-4 w-4" />
+                                Change Password
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="max-w-md space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="currentPassword" className="text-xs">Current Password</Label>
+                                    <Input
+                                        id="currentPassword"
+                                        type="password"
+                                        value={passwordForm.currentPassword}
+                                        onChange={(e) =>
+                                            setPasswordForm((prev) => ({
+                                                ...prev,
+                                                currentPassword: e.target.value,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="newPassword" className="text-xs">New Password</Label>
+                                    <Input
+                                        id="newPassword"
+                                        type="password"
+                                        value={passwordForm.newPassword}
+                                        onChange={(e) =>
+                                            setPasswordForm((prev) => ({
+                                                ...prev,
+                                                newPassword: e.target.value,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirmPassword" className="text-xs">Confirm Password</Label>
+                                    <Input
+                                        id="confirmPassword"
+                                        type="password"
+                                        value={passwordForm.confirmPassword}
+                                        onChange={(e) =>
+                                            setPasswordForm((prev) => ({
+                                                ...prev,
+                                                confirmPassword: e.target.value,
+                                            }))
+                                        }
+                                    />
+                                </div>
+
+                                {passwordError && (
+                                    <p className="text-xs text-destructive">{passwordError}</p>
+                                )}
+                                {passwordSuccess && (
+                                    <p className="text-xs text-emerald-600">Password changed successfully!</p>
+                                )}
+
+                                <Button
+                                    size="sm"
+                                    onClick={handlePasswordChange}
+                                    disabled={
+                                        passwordMutation.isPending ||
+                                        !passwordForm.currentPassword ||
+                                        !passwordForm.newPassword ||
+                                        !passwordForm.confirmPassword
+                                    }
+                                >
+                                    {passwordMutation.isPending && (
+                                        <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                                    )}
+                                    Update Password
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Account Actions */}
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="flex items-center gap-2 text-sm font-medium">
+                                <Settings className="h-4 w-4" />
+                                Account
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            <div className="flex items-center justify-between rounded-lg border px-4 py-3">
+                                <div>
+                                    <p className="text-sm font-medium">Sign Out</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Sign out from this device
+                                    </p>
+                                </div>
+                                <LogoutButton role="USER" loginPath="/login" />
+                            </div>
+
+                            <div className="flex items-center justify-between rounded-lg border border-destructive/30 px-4 py-3">
+                                <div>
+                                    <p className="text-sm font-medium text-destructive">Delete Account</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        Permanently delete your account
+                                    </p>
+                                </div>
+                                <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="destructive" size="sm">
+                                            <Trash2 className="mr-2 h-3 w-3" />
+                                            Delete
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Delete Account</DialogTitle>
+                                            <DialogDescription>
+                                                This action cannot be undone. All your data will be permanently removed.
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            <p className="text-sm">
+                                                Type <strong>DELETE</strong> to confirm:
+                                            </p>
+                                            <Input
+                                                value={deleteConfirmText}
+                                                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                                                placeholder="DELETE"
+                                            />
+                                        </div>
+                                        <DialogFooter>
+                                            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                onClick={handleDeleteAccount}
+                                                disabled={deleteConfirmText !== 'DELETE' || deleteMutation.isPending}
+                                            >
+                                                {deleteMutation.isPending && (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                )}
+                                                Delete Account
+                                            </Button>
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 };
 
 // =============================================
-// Helper Components
+// Stat Card Component
 // =============================================
 
-const StatBadge = ({
-    icon: Icon,
+const StatCard = ({
+    icon,
+    label,
     value,
-    label
+    suffix,
+    loading,
+    highlight,
 }: {
-    icon: React.ElementType;
-    value: number;
+    icon: React.ReactNode;
     label: string;
+    value: string | number;
+    suffix?: string;
+    loading?: boolean;
+    highlight?: boolean;
 }) => (
-    <div className="flex items-center gap-1.5 text-sm">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <span className="font-medium">{value}</span>
-        <span className="text-muted-foreground">{label}</span>
-    </div>
-);
-
-const ActivityDay = ({ date, count }: { date: string; count: number }) => {
-    const dayName = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
-    const intensity = count === 0 ? 0 : count <= 2 ? 1 : count <= 5 ? 2 : 3;
-
-    const bgColors = [
-        'bg-muted',
-        'bg-green-200 dark:bg-green-900',
-        'bg-green-400 dark:bg-green-700',
-        'bg-green-600 dark:bg-green-500',
-    ];
-
-    return (
-        <div className="flex flex-1 flex-col items-center gap-2">
-            <div
-                className={`h-12 w-full rounded ${bgColors[intensity]}`}
-                title={`${count} activities on ${date}`}
-            />
-            <span className="text-xs text-muted-foreground">{dayName}</span>
-        </div>
-    );
-};
-
-const ProgressCard = ({
-    title,
-    value,
-    description,
-    loading
-}: {
-    title: string;
-    value: number | string;
-    description: string;
-    loading: boolean;
-}) => (
-    <Card>
-        <CardContent className="pt-6">
-            {loading ? (
-                <>
-                    <Skeleton className="mb-2 h-8 w-16" />
-                    <Skeleton className="h-4 w-24" />
-                </>
-            ) : (
-                <>
-                    <p className="text-3xl font-bold">{value}</p>
-                    <p className="text-sm font-medium">{title}</p>
-                    <p className="text-xs text-muted-foreground">{description}</p>
-                </>
-            )}
+    <Card className={cn(highlight && 'border-orange-500/30 bg-orange-500/5')}>
+        <CardContent className="flex items-center gap-3 p-4">
+            <div className={cn(
+                'flex h-9 w-9 items-center justify-center rounded-lg',
+                highlight ? 'bg-orange-500/10 text-orange-500' : 'bg-muted text-muted-foreground'
+            )}>
+                {icon}
+            </div>
+            <div>
+                {loading ? (
+                    <Skeleton className="mb-1 h-6 w-12" />
+                ) : (
+                    <p className="text-lg font-semibold leading-none">
+                        {value}
+                        {suffix && <span className="ml-1 text-xs font-normal text-muted-foreground">{suffix}</span>}
+                    </p>
+                )}
+                <p className="text-xs text-muted-foreground">{label}</p>
+            </div>
         </CardContent>
     </Card>
 );
 
+// =============================================
+// Loading Skeleton
+// =============================================
+
 const ProfileSkeleton = () => (
-    <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-5xl px-4 py-8">
-            <Skeleton className="mb-6 h-8 w-32" />
-            <Card className="mb-6">
-                <CardContent className="pt-6">
-                    <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
-                        <Skeleton className="h-24 w-24 rounded-full" />
-                        <div className="flex-1 space-y-4">
-                            <Skeleton className="h-8 w-48" />
-                            <div className="space-y-2">
-                                <Skeleton className="h-4 w-64" />
-                                <Skeleton className="h-4 w-48" />
-                            </div>
-                            <div className="flex gap-4">
-                                <Skeleton className="h-6 w-24" />
-                                <Skeleton className="h-6 w-24" />
-                                <Skeleton className="h-6 w-24" />
-                            </div>
-                        </div>
-                        <Skeleton className="h-10 w-28" />
-                    </div>
-                </CardContent>
-            </Card>
-            <Skeleton className="h-10 w-full max-w-md" />
+    <div className="space-y-6">
+        <div className="flex items-start gap-4">
+            <Skeleton className="h-20 w-20 rounded-full" />
+            <div className="space-y-2">
+                <Skeleton className="h-6 w-40" />
+                <Skeleton className="h-4 w-56" />
+                <Skeleton className="h-3 w-32" />
+            </div>
         </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20" />
+            ))}
+        </div>
+        <Skeleton className="h-10 w-80" />
+        <Skeleton className="h-64 w-full" />
     </div>
 );

@@ -32,7 +32,7 @@ interface ICommentSectionProps {
 
 interface IComment {
     id: string;
-    content: string;
+    body: string; // Changed from 'content' to 'body' to match server
     createdAt: Date;
     updatedAt: Date;
     isEdited: boolean;
@@ -292,13 +292,13 @@ const CommentItem = ({ comment, contentId, userId, isReply = false }: ICommentIt
                     {isEditing ? (
                         <CommentForm
                             contentId={contentId}
-                            initialValue={comment.content}
+                            initialValue={comment.body}
                             commentId={comment.id}
                             onCancel={() => setIsEditing(false)}
                             onSuccess={() => setIsEditing(false)}
                         />
                     ) : (
-                        <p className='text-sm'>{comment.content}</p>
+                        <p className='text-sm'>{comment.body}</p>
                     )}
 
                     {/* Action Buttons */}

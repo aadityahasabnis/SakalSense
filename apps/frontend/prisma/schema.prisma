@@ -211,6 +211,12 @@ model Content {
   @@index([status])
   @@index([type])
   @@index([slug])
+  // Composite indexes for common query patterns
+  @@index([status, publishedAt]) // For browsing published content sorted by date
+  @@index([status, type]) // For filtering by type
+  @@index([status, difficulty]) // For filtering by difficulty
+  @@index([status, isFeatured]) // For featured content queries
+  @@index([status, viewCount]) // For trending/popular content
   @@map("contents")
 }
 
@@ -287,6 +293,8 @@ model Course {
   updatedAt      DateTime          @updatedAt
 
   @@index([slug])
+  @@index([status, isPublished]) // For browsing published courses
+  @@index([isFeatured]) // For featured courses
   @@map("courses")
 }
 
@@ -565,6 +573,8 @@ model ContentProgress {
 
   @@unique([userId, contentId])
   @@index([userId])
+  @@index([contentId]) // For checking content progress
+  @@index([userId, lastViewedAt]) // For reading history sorted by recent
   @@map("content_progress")
 }
 
@@ -609,6 +619,7 @@ model Bookmark {
 
   @@unique([userId, contentId])
   @@index([userId])
+  @@index([contentId]) // For bookmark counts
   @@map("bookmarks")
 }
 
@@ -622,6 +633,7 @@ model ContentLike {
 
   @@unique([userId, contentId])
   @@index([userId])
+  @@index([contentId]) // For like counts
   @@map("content_likes")
 }
 
@@ -669,6 +681,7 @@ model Comment {
 
   @@index([contentId])
   @@index([userId])
+  @@index([contentId, parentId]) // For loading comment threads
   @@map("comments")
 }
 
@@ -682,6 +695,7 @@ model CommentLike {
 
   @@unique([userId, commentId])
   @@index([userId])
+  @@index([commentId]) // For checking if user liked a comment
   @@map("comment_likes")
 }
 
@@ -704,6 +718,7 @@ model ContentView {
   @@index([contentId])
   @@index([userId])
   @@index([createdAt])
+  @@index([contentId, createdAt]) // For trending content calculation
   @@map("content_views")
 }
 

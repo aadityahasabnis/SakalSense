@@ -78,10 +78,9 @@ export const DashboardClient = ({ user }: IDashboardClientProps) => {
     };
 
     return (
-        <div className="min-h-screen bg-background">
-            <div className="mx-auto max-w-6xl px-4 py-8">
-                {/* Welcome Header */}
-                <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-8">
+            {/* Welcome Header */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                         <Avatar className="h-16 w-16">
                             <AvatarImage src={user.avatarLink ?? undefined} alt={user.fullName} />
@@ -331,7 +330,6 @@ export const DashboardClient = ({ user }: IDashboardClientProps) => {
                     </div>
                 </div>
             </div>
-        </div>
     );
 };
 

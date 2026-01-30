@@ -113,7 +113,6 @@ export const getPublicContentList = async (filters: {
                 orderBy: { [sortField]: sortDir },
                 skip: (page - 1) * limit,
                 take: limit,
-                cacheStrategy: { ttl: 60, swr: 30 },
             }),
             prisma.content.count({ where }),
         ]);
@@ -192,28 +191,33 @@ export const getContentBySlug = async (slug: string, userId?: string): Promise<I
 
 export const recordContentView = async (contentId: string, userId?: string): Promise<IContentViewResponse> => {
     try {
-        // Use transaction to ensure atomicity
-        await prisma.$transaction(async (tx) => {
+        // Run operations in parallel - no need for strict transaction
+        // View count increment and view record creation are independent
+        const operations: Array<Promise<unknown>> = [
             // Increment view count
-            await tx.content.update({
+            prisma.content.update({
                 where: { id: contentId },
                 data: {
                     viewCount: {
                         increment: 1,
                     },
                 },
-            });
+            }),
+        ];
 
-            // Record view if user is logged in
-            if (userId) {
-                await tx.contentView.create({
+        // Record view if user is logged in
+        if (userId) {
+            operations.push(
+                prisma.contentView.create({
                     data: {
                         userId,
                         contentId,
                     },
-                });
-            }
-        });
+                })
+            );
+        }
+
+        await Promise.all(operations);
 
         return { success: true };
     } catch (error) {
@@ -258,7 +262,6 @@ export const getFeaturedContent = async (limit = 5): Promise<IPublicContentListR
             },
             orderBy: { featuredAt: 'desc' },
             take: limit,
-            cacheStrategy: { ttl: 300, swr: 60 },
         });
 
         return {
@@ -312,7 +315,6 @@ export const getTrendingContent = async (limit = 10): Promise<IPublicContentList
             },
             orderBy: [{ viewCount: 'desc' }, { likeCount: 'desc' }],
             take: limit,
-            cacheStrategy: { ttl: 180, swr: 60 },
         });
 
         return {
@@ -389,7 +391,6 @@ export const getRelatedContent = async (contentId: string, limit = 5): Promise<I
             },
             orderBy: { publishedAt: 'desc' },
             take: limit,
-            cacheStrategy: { ttl: 120 },
         });
 
         return {

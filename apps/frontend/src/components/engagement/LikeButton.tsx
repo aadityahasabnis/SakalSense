@@ -1,12 +1,10 @@
 'use client';
 // =============================================
-// LikeButton - Interactive like button with optimistic updates
+// LikeButton - Interactive like button with no flickering
 // =============================================
 
-import { useState } from 'react';
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Heart } from 'lucide-react';
+import { Heart, Loader2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { checkLikeStatus, toggleLike } from '@/server/actions/engagement/likeActions';
@@ -17,23 +15,43 @@ interface ILikeButtonProps {
     variant?: 'default' | 'ghost' | 'outline';
     size?: 'sm' | 'default' | 'lg';
     showCount?: boolean;
+    // Initial state from server to prevent flickering
+    initialIsLiked?: boolean;
+    initialLikeCount?: number;
 }
 
-export const LikeButton = ({ contentId, variant = 'ghost', size = 'default', showCount = true }: ILikeButtonProps) => {
+export const LikeButton = ({
+    contentId,
+    variant = 'ghost',
+    size = 'default',
+    showCount = true,
+    initialIsLiked,
+    initialLikeCount,
+}: ILikeButtonProps) => {
     const queryClient = useQueryClient();
-    const [isOptimistic, setIsOptimistic] = useState(false);
 
-    // Fetch like status
-    const { data: likeData } = useQuery({
+    // Fetch like status with placeholderData to prevent flickering
+    const { data: likeData, isLoading } = useQuery({
         queryKey: ['like-status', contentId],
         queryFn: () => checkLikeStatus(contentId),
-        staleTime: 30000, // 30 seconds
+        staleTime: 60000, // 1 minute
+        gcTime: 300000, // 5 minutes
+        // Use placeholderData if initial values provided
+        placeholderData: initialIsLiked !== undefined || initialLikeCount !== undefined
+            ? {
+                success: true,
+                data: {
+                    isLiked: initialIsLiked ?? false,
+                    likeCount: initialLikeCount ?? 0,
+                },
+            }
+            : undefined,
     });
 
     const isLiked = likeData?.data?.isLiked ?? false;
     const likeCount = likeData?.data?.likeCount ?? 0;
 
-    // Toggle like mutation
+    // Toggle like mutation with optimistic updates
     const { mutate: handleToggleLike, isPending } = useMutation({
         mutationFn: () => toggleLike(contentId),
         onMutate: async () => {
@@ -44,20 +62,15 @@ export const LikeButton = ({ contentId, variant = 'ghost', size = 'default', sho
             const previous = queryClient.getQueryData(['like-status', contentId]);
 
             // Optimistically update
-            queryClient.setQueryData(['like-status', contentId], (old: typeof likeData) => {
-                if (!old) return old;
-                return {
-                    ...old,
-                    data: {
-                        isLiked: !old.data?.isLiked,
-                        likeCount: old.data?.isLiked
-                            ? (old.data?.likeCount ?? 0) - 1
-                            : (old.data?.likeCount ?? 0) + 1,
-                    },
-                };
-            });
-
-            setIsOptimistic(true);
+            queryClient.setQueryData(['like-status', contentId], (old: typeof likeData) => ({
+                success: true,
+                data: {
+                    isLiked: !old?.data?.isLiked,
+                    likeCount: old?.data?.isLiked
+                        ? (old?.data?.likeCount ?? 0) - 1
+                        : (old?.data?.likeCount ?? 0) + 1,
+                },
+            }));
 
             return { previous };
         },
@@ -70,9 +83,18 @@ export const LikeButton = ({ contentId, variant = 'ghost', size = 'default', sho
         onSettled: () => {
             // Refetch after mutation
             void queryClient.invalidateQueries({ queryKey: ['like-status', contentId] });
-            setIsOptimistic(false);
         },
     });
+
+    // Show skeleton while initial loading (only if no placeholder)
+    if (isLoading && initialIsLiked === undefined && initialLikeCount === undefined) {
+        return (
+            <Button variant={variant} size={size} disabled className='gap-2'>
+                <Loader2 className='h-4 w-4 animate-spin' />
+                {showCount && <span className='text-muted-foreground'>...</span>}
+            </Button>
+        );
+    }
 
     return (
         <Button
@@ -80,12 +102,20 @@ export const LikeButton = ({ contentId, variant = 'ghost', size = 'default', sho
             size={size}
             onClick={() => handleToggleLike()}
             disabled={isPending}
-            className={cn('gap-2', isOptimistic && 'opacity-70')}
+            className={cn('gap-2', isPending && 'opacity-70')}
         >
             <Heart
-                className={cn('h-4 w-4 transition-all', isLiked && 'fill-current text-red-500')}
+                className={cn(
+                    'h-4 w-4 transition-all',
+                    isLiked && 'fill-current text-red-500',
+                    isPending && 'scale-110'
+                )}
             />
-            {showCount && <span>{likeCount.toLocaleString()}</span>}
+            {showCount && (
+                <span className={cn(isPending && 'opacity-50')}>
+                    {likeCount.toLocaleString()}
+                </span>
+            )}
         </Button>
     );
 };
