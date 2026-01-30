@@ -7,6 +7,8 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { Loader2, Rss, TrendingUp, Users } from 'lucide-react';
 
+import { Prisma } from '@prisma/client';
+
 import { ActivityFeedItem } from '@/components/social/ActivityFeedItem';
 import { UserCard } from '@/components/social/UserCard';
 import { Button } from '@/components/ui/button';
@@ -24,7 +26,7 @@ interface IActivityItem {
     id: string;
     type: string;
     targetId: string | null;
-    metadata: Record<string, unknown> | null;
+    metadata: Prisma.JsonValue;
     createdAt: Date;
     user: {
         id: string;

@@ -19,6 +19,8 @@ model User {
   email      String   @unique
   password   String
   fullName   String
+  username   String?  @unique
+  bio        String?
   mobile     String?
   avatarLink String?
   isActive   Boolean  @default(true)
@@ -55,6 +57,7 @@ model User {
   notifications     Notification[]
 
   @@index([email])
+  @@index([username])
   @@map("users")
 }
 

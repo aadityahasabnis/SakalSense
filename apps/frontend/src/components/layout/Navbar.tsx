@@ -3,8 +3,9 @@
 import Link from 'next/link';
 
 import { useAtom } from 'jotai';
-import { Bell, Menu, Search, X } from 'lucide-react';
+import { Menu, Search, X } from 'lucide-react';
 
+import { NotificationBell } from '@/components/notifications';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -44,7 +45,7 @@ export const Navbar = ({ user, stakeholder }: INavbarProps) => {
 
                 <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setSearchOpen(true)}><Search className="h-5 w-5" /></Button>
                 <ThemeToggle />
-                <Button variant="ghost" size="icon" className="relative"><Bell className="h-5 w-5" /><span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-destructive" /></Button>
+                <NotificationBell />
 
                 {user ? (
                     <DropdownMenu>

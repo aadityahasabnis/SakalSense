@@ -6,6 +6,7 @@
 import { STAKEHOLDER } from '@/constants/auth.constants';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/server/db/prisma';
+import { Prisma } from '@prisma/client';
 
 // =============================================
 // Activity Types
@@ -31,7 +32,7 @@ interface IActivityItem {
     id: string;
     type: string;
     targetId: string | null;
-    metadata: Record<string, unknown> | null;
+    metadata: Prisma.JsonValue;
     createdAt: Date;
     user: {
         id: string;
@@ -73,7 +74,7 @@ export const createActivity = async (
                 userId: user.userId,
                 type,
                 targetId: targetId ?? null,
-                metadata: metadata ?? null,
+                metadata: metadata ? (metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
                 isPublic,
             },
         });
@@ -138,7 +139,7 @@ export const getActivityFeed = async (
 
         return {
             success: true,
-            data: data as Array<IActivityItem>,
+            data: data as unknown as Array<IActivityItem>,
             hasMore,
         };
     } catch (error) {
@@ -187,7 +188,7 @@ export const getUserActivityFeed = async (
 
         return {
             success: true,
-            data: data as Array<IActivityItem>,
+            data: data as unknown as Array<IActivityItem>,
             hasMore,
         };
     } catch (error) {
@@ -228,7 +229,7 @@ export const getRecentActivities = async (
             take: limit,
         });
 
-        return { success: true, data: activities as Array<IActivityItem> };
+        return { success: true, data: activities as unknown as Array<IActivityItem> };
     } catch (error) {
         console.error('getRecentActivities error:', error);
         return { success: false, error: 'Failed to fetch recent activities' };
@@ -271,7 +272,7 @@ export const getGlobalActivityFeed = async (
 
         return {
             success: true,
-            data: data as Array<IActivityItem>,
+            data: data as unknown as Array<IActivityItem>,
             hasMore,
         };
     } catch (error) {

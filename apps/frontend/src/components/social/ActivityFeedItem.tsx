@@ -18,6 +18,8 @@ import {
     UserPlus,
 } from 'lucide-react';
 
+import { Prisma } from '@prisma/client';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -91,7 +93,7 @@ interface IActivityFeedItemProps {
         id: string;
         type: string;
         targetId: string | null;
-        metadata: Record<string, unknown> | null;
+        metadata: Prisma.JsonValue;
         createdAt: Date;
         user: {
             id: string;
@@ -114,7 +116,10 @@ export const ActivityFeedItem = ({ activity }: IActivityFeedItemProps) => {
     };
 
     const Icon = config.icon;
-    const metadata = activity.metadata || {};
+    // Cast JsonValue to Record for property access
+    const metadata = (typeof activity.metadata === 'object' && activity.metadata !== null && !Array.isArray(activity.metadata))
+        ? (activity.metadata as Record<string, unknown>)
+        : {};
 
     const initials = activity.user.fullName
         .split(' ')

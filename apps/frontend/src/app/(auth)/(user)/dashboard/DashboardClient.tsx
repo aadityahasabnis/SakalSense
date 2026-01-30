@@ -446,7 +446,7 @@ function ActivityCalendarCard({
             for (let d = 0; d < 7; d++) {
                 const date = new Date(today);
                 date.setDate(date.getDate() - (w * 7 + (6 - d)));
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = date.toISOString().split('T')[0] ?? '';
                 const activity = activities.find((a) => a.date === dateStr);
                 week.push({
                     date: dateStr,

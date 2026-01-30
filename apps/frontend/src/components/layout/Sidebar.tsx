@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { useAtom } from 'jotai';
-import { BarChart3, Bookmark, BookOpen, FileText, GraduationCap, LayoutDashboard, type LucideIcon, Settings, Users } from 'lucide-react';
+import { BarChart3, Bell, Bookmark, BookOpen, FileText, GraduationCap, LayoutDashboard, type LucideIcon, Settings, Users } from 'lucide-react';
 
 import { sidebarOpenAtom } from '@/jotai/atoms';
 import { cn } from '@/lib/utils';
@@ -17,6 +17,8 @@ const USER_NAV: Array<INavItem> = [
     { title: 'Browse', href: '/browse', icon: BookOpen },
     { title: 'My Courses', href: '/courses', icon: GraduationCap },
     { title: 'Bookmarks', href: '/bookmarks', icon: Bookmark },
+    { title: 'Notifications', href: '/notifications', icon: Bell },
+    { title: 'Community', href: '/users', icon: Users },
     { title: 'Progress', href: '/progress', icon: BarChart3 },
     { title: 'Settings', href: '/settings', icon: Settings },
 ];

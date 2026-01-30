@@ -6,6 +6,7 @@
 import { STAKEHOLDER } from '@/constants/auth.constants';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/server/db/prisma';
+import { createFollowNotification } from '@/server/actions/notifications/notificationActions';
 
 // =============================================
 // Response Types
@@ -96,6 +97,20 @@ export const followUser = async (userId: string): Promise<IFollowResponse> => {
                 isPublic: true,
             },
         });
+
+        // Create notification for the followed user
+        const followerInfo = await prisma.user.findUnique({
+            where: { id: currentUser.userId },
+            select: { fullName: true, username: true },
+        });
+
+        if (followerInfo) {
+            await createFollowNotification(
+                userId,
+                followerInfo.fullName,
+                followerInfo.username
+            );
+        }
 
         return { success: true, isFollowing: true };
     } catch (error) {
@@ -208,17 +223,6 @@ export const getFollowers = async (
         const [follows, total] = await Promise.all([
             prisma.userFollow.findMany({
                 where: { followingId: userId },
-                select: {
-                    follower: {
-                        select: {
-                            id: true,
-                            fullName: true,
-                            username: true,
-                            avatarLink: true,
-                            bio: true,
-                        },
-                    },
-                },
                 orderBy: { createdAt: 'desc' },
                 skip: (page - 1) * limit,
                 take: limit,
@@ -226,23 +230,48 @@ export const getFollowers = async (
             prisma.userFollow.count({ where: { followingId: userId } }),
         ]);
 
+        // Fetch follower user details
+        const followerIds = follows.map((f) => f.followerId);
+        const users = await prisma.user.findMany({
+            where: { id: { in: followerIds } },
+            select: {
+                id: true,
+                fullName: true,
+                username: true,
+                avatarLink: true,
+                bio: true,
+            },
+        });
+
+        const userMap = new Map(users.map((u) => [u.id, u]));
+
         // If current user is logged in, check which of these followers they follow
         let followingSet = new Set<string>();
         if (currentUser) {
             const userFollowing = await prisma.userFollow.findMany({
                 where: {
                     followerId: currentUser.userId,
-                    followingId: { in: follows.map((f) => f.follower.id) },
+                    followingId: { in: followerIds },
                 },
                 select: { followingId: true },
             });
             followingSet = new Set(userFollowing.map((f) => f.followingId));
         }
 
-        const data = follows.map((f) => ({
-            ...f.follower,
-            isFollowing: followingSet.has(f.follower.id),
-        }));
+        const data: IUserListItem[] = follows
+            .map((f) => {
+                const user = userMap.get(f.followerId);
+                if (!user) return null;
+                return {
+                    id: user.id,
+                    fullName: user.fullName,
+                    username: user.username,
+                    avatarLink: user.avatarLink,
+                    bio: user.bio,
+                    isFollowing: followingSet.has(user.id),
+                };
+            })
+            .filter((u): u is NonNullable<typeof u> => u !== null);
 
         return { success: true, data, total };
     } catch (error) {
@@ -266,17 +295,6 @@ export const getFollowing = async (
         const [follows, total] = await Promise.all([
             prisma.userFollow.findMany({
                 where: { followerId: userId },
-                select: {
-                    following: {
-                        select: {
-                            id: true,
-                            fullName: true,
-                            username: true,
-                            avatarLink: true,
-                            bio: true,
-                        },
-                    },
-                },
                 orderBy: { createdAt: 'desc' },
                 skip: (page - 1) * limit,
                 take: limit,
@@ -284,23 +302,48 @@ export const getFollowing = async (
             prisma.userFollow.count({ where: { followerId: userId } }),
         ]);
 
+        // Fetch following user details
+        const followingIds = follows.map((f) => f.followingId);
+        const users = await prisma.user.findMany({
+            where: { id: { in: followingIds } },
+            select: {
+                id: true,
+                fullName: true,
+                username: true,
+                avatarLink: true,
+                bio: true,
+            },
+        });
+
+        const userMap = new Map(users.map((u) => [u.id, u]));
+
         // If current user is logged in, check which of these they follow
         let followingSet = new Set<string>();
         if (currentUser) {
             const userFollowing = await prisma.userFollow.findMany({
                 where: {
                     followerId: currentUser.userId,
-                    followingId: { in: follows.map((f) => f.following.id) },
+                    followingId: { in: followingIds },
                 },
                 select: { followingId: true },
             });
             followingSet = new Set(userFollowing.map((f) => f.followingId));
         }
 
-        const data = follows.map((f) => ({
-            ...f.following,
-            isFollowing: followingSet.has(f.following.id),
-        }));
+        const data: IUserListItem[] = follows
+            .map((f) => {
+                const user = userMap.get(f.followingId);
+                if (!user) return null;
+                return {
+                    id: user.id,
+                    fullName: user.fullName,
+                    username: user.username,
+                    avatarLink: user.avatarLink,
+                    bio: user.bio,
+                    isFollowing: followingSet.has(user.id),
+                };
+            })
+            .filter((u): u is NonNullable<typeof u> => u !== null);
 
         return { success: true, data, total };
     } catch (error) {

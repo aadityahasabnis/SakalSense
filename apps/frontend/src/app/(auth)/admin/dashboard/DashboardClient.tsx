@@ -37,10 +37,10 @@ export const DashboardClient = () => {
             <PageHeader title="Dashboard" description="Welcome back! Here's an overview of your content." action={{ label: 'New Content', href: '/admin/content/new' }} />
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Total Content" value={stats.totalContent} description={`${stats.publishedCount} published, ${stats.draftCount} drafts`} icon={<FileText className="h-4 w-4" />} />
-                <StatCard title="Total Views" value={stats.totalViews.toLocaleString()} description="Across all content" icon={<Eye className="h-4 w-4" />} />
-                <StatCard title="Total Likes" value={stats.totalLikes.toLocaleString()} description="User engagement" icon={<Heart className="h-4 w-4" />} />
-                <StatCard title="In Review" value={stats.reviewCount} description="Awaiting approval" icon={<Clock className="h-4 w-4" />} />
+                <StatCard label="Total Content" value={stats.totalContent} subtitle={`${stats.publishedCount} published, ${stats.draftCount} drafts`} icon={<FileText className="h-4 w-4" />} />
+                <StatCard label="Total Views" value={stats.totalViews.toLocaleString()} subtitle="Across all content" icon={<Eye className="h-4 w-4" />} />
+                <StatCard label="Total Likes" value={stats.totalLikes.toLocaleString()} subtitle="User engagement" icon={<Heart className="h-4 w-4" />} />
+                <StatCard label="In Review" value={stats.reviewCount} subtitle="Awaiting approval" icon={<Clock className="h-4 w-4" />} />
             </div>
 
             <Card>
