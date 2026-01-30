@@ -29,7 +29,7 @@ export const toggleLike = async (contentId: string): Promise<ILikeResponse> => {
         }
 
         // Use transaction to ensure atomicity
-        const result = await prisma.$transaction(async (tx: typeof prisma) => {
+        const result = await prisma.$transaction(async (tx) => {
             // Check if like already exists
             const existing = await tx.contentLike.findUnique({
                 where: {
@@ -165,27 +165,7 @@ export const checkLikeStatus = async (contentId: string): Promise<ILikeResponse>
 export const getUserLikes = async (filters: {
     page?: number;
     limit?: number;
-}): Promise<{
-    success: boolean;
-    data?: Array<{
-        id: string;
-        createdAt: Date;
-        content: {
-            id: string;
-            title: string;
-            slug: string;
-            type: string;
-            thumbnailUrl?: string;
-            description?: string;
-            difficulty: string;
-            viewCount: number;
-            likeCount: number;
-            publishedAt?: Date;
-        };
-    }>;
-    total?: number;
-    error?: string;
-}> => {
+}) => {
     try {
         const user = await getCurrentUser(STAKEHOLDER.USER);
         if (!user) {
@@ -237,7 +217,7 @@ export const getUserLikes = async (filters: {
 
         return {
             success: true,
-            data: data as ReturnType<typeof getUserLikes> extends Promise<{ data?: infer T }> ? T : never,
+            data,
             total,
         };
     } catch (error) {

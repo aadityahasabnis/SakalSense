@@ -31,6 +31,7 @@ model User {
   contentProgress  ContentProgress[]
   lessonProgress   LessonProgress[]
   contentLikes     ContentLike[]
+  commentLikes     CommentLike[]
   comments         Comment[]
   topicsFollowed   TopicFollower[]
   creatorsFollowed CreatorFollower[]
@@ -651,23 +652,37 @@ model CreatorFollower {
 }
 
 model Comment {
-  id        String    @id @default(uuid())
+  id        String        @id @default(uuid())
   body      String
   userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   contentId String
-  content   Content   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  content   Content       @relation(fields: [contentId], references: [id], onDelete: Cascade)
   parentId  String?
-  parent    Comment?  @relation("CommentThread", fields: [parentId], references: [id])
-  replies   Comment[] @relation("CommentThread")
-  likeCount Int       @default(0)
-  isEdited  Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  parent    Comment?      @relation("CommentThread", fields: [parentId], references: [id])
+  replies   Comment[]     @relation("CommentThread")
+  likes     CommentLike[]
+  likeCount Int           @default(0)
+  isEdited  Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@index([contentId])
   @@index([userId])
   @@map("comments")
+}
+
+model CommentLike {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  commentId String
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, commentId])
+  @@index([userId])
+  @@map("comment_likes")
 }
 
 // =============================================

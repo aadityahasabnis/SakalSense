@@ -3,9 +3,9 @@
 // Comment Actions - User content commenting
 // =============================================
 
-import { prisma } from '@/server/db/prisma';
 import { STAKEHOLDER } from '@/constants/auth.constants';
 import { getCurrentUser } from '@/lib/auth';
+import { prisma } from '@/server/db/prisma';
 import { type IComment } from '@/types/content.types';
 
 // =============================================
@@ -62,7 +62,7 @@ export const createComment = async (data: {
         }
 
         // Use transaction to create comment and update count
-        const comment = await prisma.$transaction(async (tx: typeof prisma) => {
+        const comment = await prisma.$transaction(async (tx) => {
             // Create comment
             const newComment = await tx.comment.create({
                 data: {
@@ -248,7 +248,7 @@ export const deleteComment = async (commentId: string): Promise<ICommentResponse
         }
 
         // Use transaction to delete comment and update count
-        await prisma.$transaction(async (tx: typeof prisma) => {
+        await prisma.$transaction(async (tx) => {
             // Delete comment (cascade will delete replies)
             await tx.comment.delete({
                 where: { id: commentId },
@@ -288,7 +288,7 @@ export const toggleCommentLike = async (commentId: string): Promise<{ success: b
             return { success: false, isLiked: false, likeCount: 0, error: 'You must be logged in to like comments' };
         }
 
-        const result = await prisma.$transaction(async (tx: typeof prisma) => {
+        const result = await prisma.$transaction(async (tx) => {
             // Check if like already exists
             const existing = await tx.commentLike.findUnique({
                 where: {

@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 
+import { type Prisma } from '@prisma/client';
 import { useAtom } from 'jotai';
 
 import { type ContentStatusType, type DifficultyType } from '@/constants/content.constants';
@@ -12,7 +13,7 @@ import { type ICourse } from '@/types/content.types';
 interface ICourseFilters { search?: string; status?: ContentStatusType; difficulty?: DifficultyType; page?: number; limit?: number }
 interface ICourseInput { title: string; slug: string; description?: string; thumbnailUrl?: string; difficulty: DifficultyType; estimatedHours?: number }
 interface ISectionInput { title: string; description?: string; order: number }
-interface ILessonInput { title: string; description?: string; order: number; body?: unknown; isFree?: boolean }
+interface ILessonInput { title: string; description?: string; order: number; body?: Prisma.InputJsonValue; isFree?: boolean }
 
 export const useCourseList = () => {
     const [, addNotification] = useAtom(addNotificationAtom);

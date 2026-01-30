@@ -193,7 +193,7 @@ export const getContentBySlug = async (slug: string, userId?: string): Promise<I
 export const recordContentView = async (contentId: string, userId?: string): Promise<IContentViewResponse> => {
     try {
         // Use transaction to ensure atomicity
-        await prisma.$transaction(async (tx: typeof prisma) => {
+        await prisma.$transaction(async (tx) => {
             // Increment view count
             await tx.content.update({
                 where: { id: contentId },

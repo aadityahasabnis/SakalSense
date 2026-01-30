@@ -1,27 +1,25 @@
 // =============================================
-// User Home Page - Main Dashboard
+// User Profile Page - Server Component
 // =============================================
 
 import { redirect } from 'next/navigation';
 
-import { DashboardClient } from './DashboardClient';
+import { ProfileClient } from './ProfileClient';
 
 import { STAKEHOLDER } from '@/constants/auth.constants';
 import { getCurrentUser } from '@/lib/auth';
 
 export const metadata = {
-    title: 'Dashboard | SakalSense',
-    description: 'Your personal learning dashboard',
+    title: 'My Profile | SakalSense',
+    description: 'View and manage your SakalSense profile and settings',
 };
 
-const UserDashboardPage = async () => {
+export default async function ProfilePage() {
     const user = await getCurrentUser(STAKEHOLDER.USER);
 
     if (!user) {
         redirect('/login');
     }
 
-    return <DashboardClient user={user} />;
-};
-
-export default UserDashboardPage;
+    return <ProfileClient userId={user.userId} />;
+}
