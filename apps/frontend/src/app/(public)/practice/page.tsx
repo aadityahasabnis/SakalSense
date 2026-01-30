@@ -5,6 +5,7 @@
 import { type Metadata } from 'next';
 
 import { PracticeClient } from '@/components/content/PracticeClient';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 export const metadata: Metadata = {
     title: 'Practice | SakalSense',
@@ -13,8 +14,10 @@ export const metadata: Metadata = {
 
 export default function PracticePage() {
     return (
-        <div className="container mx-auto px-4 py-8">
-            <PracticeClient />
-        </div>
+        <PublicLayout>
+            <div className="container mx-auto px-4 py-8">
+                <PracticeClient />
+            </div>
+        </PublicLayout>
     );
 }

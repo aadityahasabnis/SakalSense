@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useQuery } from '@tanstack/react-query';
+import { useAtomValue } from 'jotai';
 import { ArrowLeft, Check, Clock } from 'lucide-react';
 
 import { ContentCard } from '@/components/content/ContentCard';
@@ -17,15 +18,16 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useReadingProgress, formatReadingTime } from '@/hooks/useProgress';
+import { userIdAtom } from '@/jotai/atoms';
 import { cn } from '@/lib/utils';
 import { getContentBySlug, getRelatedContent, recordContentView } from '@/server/actions/content/publicContentActions';
 
 interface IContentViewClientProps {
     slug: string;
-    userId?: string;
 }
 
-export const ContentViewClient = ({ slug, userId }: IContentViewClientProps) => {
+export const ContentViewClient = ({ slug }: IContentViewClientProps) => {
+    const userId = useAtomValue(userIdAtom);
     const router = useRouter();
     const contentRef = useRef<HTMLDivElement>(null);
     const [viewRecorded, setViewRecorded] = useState(false);
@@ -34,7 +36,7 @@ export const ContentViewClient = ({ slug, userId }: IContentViewClientProps) => 
     // Fetch content
     const { data: contentData, isLoading, isError } = useQuery({
         queryKey: ['content', slug],
-        queryFn: () => getContentBySlug(slug, userId),
+        queryFn: () => getContentBySlug(slug, userId ?? undefined),
         staleTime: 60000,
     });
 
@@ -64,7 +66,7 @@ export const ContentViewClient = ({ slug, userId }: IContentViewClientProps) => 
     // Record view (once per page load)
     useEffect(() => {
         if (content && !viewRecorded) {
-            void recordContentView(content.id, userId);
+            void recordContentView(content.id, userId ?? undefined);
             setViewRecorded(true);
         }
     }, [content, userId, viewRecorded]);
@@ -187,11 +189,11 @@ export const ContentViewClient = ({ slug, userId }: IContentViewClientProps) => 
                     )}
 
                     {/* Content */}
-                    <ContentReader content={content} userId={userId} />
+                    <ContentReader content={content} userId={userId ?? undefined} />
 
                     {/* Comments Section */}
                     <div className="mx-auto mt-16 max-w-4xl">
-                        <CommentSection contentId={content.id} userId={userId} />
+                        <CommentSection contentId={content.id} userId={userId ?? undefined} />
                     </div>
 
                     {/* Related Content */}

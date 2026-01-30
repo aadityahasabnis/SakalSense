@@ -5,6 +5,7 @@
 import { type Metadata } from 'next';
 
 import { CoursesClient } from '@/components/content/CoursesClient';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 
 export const metadata: Metadata = {
     title: 'Courses | SakalSense',
@@ -13,8 +14,10 @@ export const metadata: Metadata = {
 
 export default function CoursesPage() {
     return (
-        <div className="container mx-auto px-4 py-8">
-            <CoursesClient />
-        </div>
+        <PublicLayout>
+            <div className="container mx-auto px-4 py-8">
+                <CoursesClient />
+            </div>
+        </PublicLayout>
     );
 }

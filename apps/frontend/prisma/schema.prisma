@@ -42,6 +42,18 @@ model User {
   practiceSubmissions PracticeSubmission[]
   streak           UserStreak?
 
+  // Gamification relations
+  xp                UserXP?
+  xpTransactions    XPTransaction[]
+  achievements      UserAchievement[]
+  badges            UserBadge[]
+  following         UserFollow[] @relation("UserFollowing")
+  followers         UserFollow[] @relation("UserFollowers")
+  activityFeed      ActivityFeed[]
+  dailyGoal         UserDailyGoal?
+  dailyProgress     UserDailyProgress[]
+  notifications     Notification[]
+
   @@index([email])
   @@map("users")
 }
@@ -731,4 +743,200 @@ model UserStreak {
   lastActiveAt  DateTime @default(now())
 
   @@map("user_streaks")
+}
+
+// =============================================
+// XP & Points System
+// =============================================
+
+model UserXP {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalXP        Int      @default(0)
+  weeklyXP       Int      @default(0)
+  monthlyXP      Int      @default(0)
+  level          Int      @default(1)
+  weekStartsAt   DateTime @default(now())
+  monthStartsAt  DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([totalXP])
+  @@index([weeklyXP])
+  @@index([monthlyXP])
+  @@map("user_xp")
+}
+
+model XPTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount      Int
+  type        String   // READ_CONTENT, COMPLETE_CONTENT, LIKE_CONTENT, COMMENT, COMPLETE_LESSON, COMPLETE_COURSE, SOLVE_PROBLEM, DAILY_STREAK, ACHIEVEMENT
+  referenceId String?  // Content ID, Course ID, Problem ID, etc.
+  description String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+  @@map("xp_transactions")
+}
+
+// =============================================
+// Achievements & Badges
+// =============================================
+
+model Achievement {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String?  // Icon name or URL
+  category    String   // READING, LEARNING, PRACTICE, SOCIAL, STREAK, MILESTONE
+  xpReward    Int      @default(0)
+  condition   Json     // Condition to unlock { type: 'count', target: 10, metric: 'articles_read' }
+  isSecret    Boolean  @default(false)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@index([category])
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+  notified      Boolean     @default(false)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+model Badge {
+  id          String   @id @default(uuid())
+  slug        String   @unique
+  name        String
+  description String
+  icon        String?
+  color       String?  // Badge color theme
+  rarity      String   @default("COMMON") // COMMON, RARE, EPIC, LEGENDARY
+  createdAt   DateTime @default(now())
+
+  userBadges UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badgeId    String
+  badge      Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+  awardedAt  DateTime @default(now())
+  isDisplayed Boolean @default(false) // If user wants to display on profile
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@map("user_badges")
+}
+
+// =============================================
+// Social Features
+// =============================================
+
+model UserFollow {
+  id          String   @id @default(uuid())
+  followerId  String
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId String
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("user_follows")
+}
+
+model ActivityFeed {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // CONTENT_READ, CONTENT_COMPLETED, COURSE_ENROLLED, COURSE_COMPLETED, PROBLEM_SOLVED, ACHIEVEMENT_UNLOCKED, BADGE_EARNED, FOLLOWED_USER
+  targetId  String?  // Reference to content, course, user, etc.
+  metadata  Json?    // Additional data for the activity
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([type])
+  @@map("activity_feed")
+}
+
+// =============================================
+// Daily Goals & Learning Stats
+// =============================================
+
+model UserDailyGoal {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyXPGoal     Int      @default(50)
+  dailyContentGoal Int     @default(1)
+  dailyTimeGoal   Int      @default(30) // Minutes
+  reminderEnabled Boolean  @default(false)
+  reminderTime    String?  // HH:mm format
+  updatedAt       DateTime @updatedAt
+
+  @@map("user_daily_goals")
+}
+
+model UserDailyProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime @db.Date
+  xpEarned        Int      @default(0)
+  contentCompleted Int     @default(0)
+  timeSpent       Int      @default(0) // Minutes
+  lessonsCompleted Int     @default(0)
+  problemsSolved  Int      @default(0)
+  goalMet         Boolean  @default(false)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+  @@map("user_daily_progress")
+}
+
+// =============================================
+// Notifications
+// =============================================
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // ACHIEVEMENT, BADGE, FOLLOW, COMMENT_REPLY, MENTION, STREAK, GOAL_REMINDER
+  title     String
+  message   String
+  link      String?  // URL to navigate when clicked
+  metadata  Json?    // Additional data
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
 }

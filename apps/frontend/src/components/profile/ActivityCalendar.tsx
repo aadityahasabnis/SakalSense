@@ -1,14 +1,15 @@
 'use client';
 // =============================================
-// ActivityCalendar - GitHub/LeetCode-style yearly activity heatmap
-// Professional design with accurate month-wise day placement
+// ActivityCalendar - GitHub-style yearly activity heatmap
+// Proper month-wise grid layout with accurate week positioning
 // =============================================
 
 import { useMemo, useState } from 'react';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Flame, Target } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
     Tooltip,
     TooltipContent,
@@ -38,7 +39,12 @@ interface IActivityCalendarProps {
 // =============================================
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const DAYS_SHORT = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
+const DAYS_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+// Cell size and gap
+const CELL_SIZE = 11;
+const CELL_GAP = 3;
+const WEEK_WIDTH = CELL_SIZE + CELL_GAP;
 
 // =============================================
 // Utilities
@@ -53,7 +59,7 @@ const getIntensityLevel = (count: number): number => {
 };
 
 const formatDateForDisplay = (dateStr: string): string => {
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + 'T00:00:00');
     return date.toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'short',
@@ -62,103 +68,112 @@ const formatDateForDisplay = (dateStr: string): string => {
     });
 };
 
+const getContributionText = (count: number): string => {
+    if (count === 0) return 'No contributions';
+    return `${count} contribution${count === 1 ? '' : 's'}`;
+};
+
 // =============================================
-// Generate Calendar Data Structure
+// Generate Calendar Data - GitHub Style
 // =============================================
 
-interface ICalendarWeek {
-    days: Array<{
-        date: string;
-        dayOfMonth: number;
-        month: number;
-        isCurrentYear: boolean;
-        isToday: boolean;
-    } | null>;
+interface IDayCell {
+    date: string;
+    dayOfMonth: number;
+    month: number;
+    year: number;
+    isToday: boolean;
 }
 
-interface IMonthData {
+interface IWeekColumn {
+    days: (IDayCell | null)[];
+    weekIndex: number;
+}
+
+interface IMonthLabel {
     name: string;
-    weeks: ICalendarWeek[];
-    startWeekIndex: number;
-    weekCount: number;
+    startWeek: number;
+    colSpan: number;
 }
 
-const generateCalendarData = (year: number): { weeks: ICalendarWeek[]; months: IMonthData[] } => {
-    const weeks: ICalendarWeek[] = [];
-    const months: IMonthData[] = [];
+const generateGitHubCalendar = (year: number) => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
-    // Find the first day to display (Sunday of the week containing Jan 1)
+    // Start from the first day of the year
     const jan1 = new Date(year, 0, 1);
+    // Find the Sunday of the week containing Jan 1
     const startDate = new Date(jan1);
     startDate.setDate(startDate.getDate() - startDate.getDay());
 
-    // Find the last day to display (Saturday of the week containing Dec 31)
+    // End at December 31
     const dec31 = new Date(year, 11, 31);
+    // Find the Saturday of the week containing Dec 31
     const endDate = new Date(dec31);
     endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
 
+    const weeks: IWeekColumn[] = [];
+    const monthLabels: IMonthLabel[] = [];
+    
     let currentDate = new Date(startDate);
-    let currentWeek: ICalendarWeek['days'] = [];
-    let currentMonth = -1;
+    let weekIndex = 0;
+    let currentMonthInYear = -1;
 
     while (currentDate <= endDate) {
-        const dateStr = currentDate.toISOString().split('T')[0] ?? '';
-        const month = currentDate.getMonth();
-        const isCurrentYear = currentDate.getFullYear() === year;
-
-        // Track month changes for the current year
-        if (isCurrentYear && month !== currentMonth) {
-            if (currentMonth !== -1 && months.length > 0) {
-                const lastMonth = months[months.length - 1];
-                if (lastMonth) {
-                    lastMonth.weekCount = weeks.length - lastMonth.startWeekIndex;
+        const week: (IDayCell | null)[] = [];
+        
+        for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+            const dateStr = currentDate.toISOString().split('T')[0] ?? '';
+            const cellYear = currentDate.getFullYear();
+            const cellMonth = currentDate.getMonth();
+            
+            // Only include days from the target year
+            if (cellYear === year) {
+                // Track month changes for labels
+                if (cellMonth !== currentMonthInYear) {
+                    // If we're on day 1-7 of a new month AND it's a Sunday (start of week)
+                    // OR if we're at the beginning of the calendar
+                    if (currentMonthInYear === -1 || dayOfWeek === 0 || currentDate.getDate() <= 7) {
+                        monthLabels.push({
+                            name: MONTHS[cellMonth] ?? '',
+                            startWeek: weekIndex,
+                            colSpan: 0, // Will calculate later
+                        });
+                    }
+                    currentMonthInYear = cellMonth;
                 }
+
+                week.push({
+                    date: dateStr,
+                    dayOfMonth: currentDate.getDate(),
+                    month: cellMonth,
+                    year: cellYear,
+                    isToday: dateStr === todayStr,
+                });
+            } else {
+                week.push(null);
             }
-            months.push({
-                name: MONTHS[month] ?? '',
-                weeks: [],
-                startWeekIndex: weeks.length,
-                weekCount: 0,
-            });
-            currentMonth = month;
+            
+            currentDate.setDate(currentDate.getDate() + 1);
         }
-
-        currentWeek.push({
-            date: dateStr,
-            dayOfMonth: currentDate.getDate(),
-            month: month,
-            isCurrentYear,
-            isToday: dateStr === todayStr,
-        });
-
-        // If we've filled a week (7 days)
-        if (currentWeek.length === 7) {
-            weeks.push({ days: currentWeek });
-            currentWeek = [];
-        }
-
-        currentDate.setDate(currentDate.getDate() + 1);
+        
+        weeks.push({ days: week, weekIndex });
+        weekIndex++;
     }
 
-    // Push any remaining days
-    if (currentWeek.length > 0) {
-        while (currentWeek.length < 7) {
-            currentWeek.push(null);
-        }
-        weeks.push({ days: currentWeek });
-    }
-
-    // Set the week count for the last month
-    if (months.length > 0) {
-        const lastMonth = months[months.length - 1];
-        if (lastMonth) {
-            lastMonth.weekCount = weeks.length - lastMonth.startWeekIndex;
+    // Calculate colSpan for each month label
+    for (let i = 0; i < monthLabels.length; i++) {
+        const current = monthLabels[i];
+        const next = monthLabels[i + 1];
+        if (current) {
+            current.colSpan = next ? next.startWeek - current.startWeek : weeks.length - current.startWeek;
         }
     }
 
-    return { weeks, months };
+    // Remove month labels that have less than 2 weeks (too narrow to show)
+    const filteredMonthLabels = monthLabels.filter(m => m.colSpan >= 2);
+
+    return { weeks, monthLabels: filteredMonthLabels };
 };
 
 // =============================================
@@ -184,7 +199,7 @@ export const ActivityCalendar = ({
     }, [activityData]);
 
     // Generate calendar structure
-    const { weeks, months } = useMemo(() => generateCalendarData(year), [year]);
+    const { weeks, monthLabels } = useMemo(() => generateGitHubCalendar(year), [year]);
 
     // Calculate stats
     const stats = useMemo(() => {
@@ -192,24 +207,33 @@ export const ActivityCalendar = ({
         let activeDays = 0;
         let maxStreak = 0;
         let currentStreak = 0;
-        let lastActiveDate: Date | null = null;
 
-        // Sort dates and calculate
-        const sortedDates = Array.from(activityMap.entries())
-            .filter(([date]) => {
-                const d = new Date(date);
-                return d.getFullYear() === year;
-            })
-            .sort(([a], [b]) => a.localeCompare(b));
+        // Get all dates in the year sorted
+        const yearDates: Array<{ date: string; count: number }> = [];
+        
+        weeks.forEach(week => {
+            week.days.forEach(day => {
+                if (day && day.year === year) {
+                    const count = activityMap.get(day.date) ?? 0;
+                    yearDates.push({ date: day.date, count });
+                }
+            });
+        });
 
-        sortedDates.forEach(([date, count]) => {
+        yearDates.sort((a, b) => a.date.localeCompare(b.date));
+
+        let prevDate: string | null = null;
+        yearDates.forEach(({ date, count }) => {
             if (count > 0) {
                 total += count;
                 activeDays++;
 
-                const currentDate = new Date(date);
-                if (lastActiveDate) {
-                    const dayDiff = Math.floor((currentDate.getTime() - lastActiveDate.getTime()) / (1000 * 60 * 60 * 24));
+                // Check for streak
+                if (prevDate) {
+                    const prev = new Date(prevDate + 'T00:00:00');
+                    const curr = new Date(date + 'T00:00:00');
+                    const dayDiff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
+                    
                     if (dayDiff === 1) {
                         currentStreak++;
                     } else {
@@ -219,12 +243,12 @@ export const ActivityCalendar = ({
                     currentStreak = 1;
                 }
                 maxStreak = Math.max(maxStreak, currentStreak);
-                lastActiveDate = currentDate;
+                prevDate = date;
             }
         });
 
         return { total, activeDays, maxStreak };
-    }, [activityMap, year]);
+    }, [activityMap, weeks, year]);
 
     const handleYearChange = (newYear: number) => {
         setYear(newYear);
@@ -233,168 +257,208 @@ export const ActivityCalendar = ({
 
     if (loading) {
         return (
-            <div className="rounded-lg border bg-card p-4">
-                <div className="mb-4 flex items-center justify-between">
-                    <div className="h-5 w-40 animate-pulse rounded bg-muted" />
-                    <div className="h-8 w-24 animate-pulse rounded bg-muted" />
-                </div>
-                <div className="h-[120px] animate-pulse rounded bg-muted" />
-            </div>
+            <Card>
+                <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                        <div className="h-5 w-48 animate-pulse rounded bg-muted" />
+                        <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="h-[130px] animate-pulse rounded bg-muted" />
+                </CardContent>
+            </Card>
         );
     }
 
     return (
-        <div className="rounded-lg border bg-card">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b px-4 py-3">
-                <div className="space-y-0.5">
-                    <h3 className="text-sm font-medium">
-                        {stats.total} contributions in {year}
-                    </h3>
-                    <p className="text-xs text-muted-foreground">
-                        {stats.activeDays} active days
-                        {stats.maxStreak > 1 && ` · ${stats.maxStreak} day max streak`}
-                    </p>
-                </div>
-                <div className="flex items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => handleYearChange(year - 1)}
-                        disabled={year <= currentYear - 5}
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <span className="min-w-[3.5rem] text-center text-sm font-medium">{year}</span>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => handleYearChange(year + 1)}
-                        disabled={year >= currentYear}
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
-
-            {/* Calendar */}
-            <div className="overflow-x-auto p-4">
-                <TooltipProvider delayDuration={50}>
-                    <div className="inline-block min-w-full">
-                        {/* Month Labels */}
-                        <div className="mb-1 flex pl-7">
-                            {months.map((month, idx) => (
-                                <div
-                                    key={`${month.name}-${idx}`}
-                                    className="text-xs text-muted-foreground"
-                                    style={{
-                                        width: `${month.weekCount * 12}px`,
-                                        minWidth: `${month.weekCount * 12}px`,
-                                    }}
-                                >
-                                    {month.weekCount >= 3 ? month.name : ''}
+        <Card>
+            {/* Header with Stats */}
+            <CardHeader className="pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <p className="text-2xl font-bold">{stats.total.toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">contributions in {year}</p>
+                        </div>
+                        <div className="hidden sm:flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-1.5">
+                                <Target className="h-4 w-4 text-emerald-500" />
+                                <span>{stats.activeDays} days</span>
+                            </div>
+                            {stats.maxStreak > 1 && (
+                                <div className="flex items-center gap-1.5">
+                                    <Flame className="h-4 w-4 text-orange-500" />
+                                    <span>{stats.maxStreak} day streak</span>
                                 </div>
-                            ))}
-                        </div>
-
-                        {/* Calendar Grid */}
-                        <div className="flex">
-                            {/* Day Labels */}
-                            <div className="mr-1 flex flex-col gap-[2px]">
-                                {DAYS_SHORT.map((day, i) => (
-                                    <div
-                                        key={i}
-                                        className="flex h-[10px] w-6 items-center justify-end pr-1 text-[10px] text-muted-foreground"
-                                    >
-                                        {day}
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* Weeks */}
-                            <div className="flex gap-[2px]">
-                                {weeks.map((week, weekIndex) => (
-                                    <div key={weekIndex} className="flex flex-col gap-[2px]">
-                                        {week.days.map((day, dayIndex) => {
-                                            if (!day || !day.isCurrentYear) {
-                                                return (
-                                                    <div
-                                                        key={`empty-${weekIndex}-${dayIndex}`}
-                                                        className="h-[10px] w-[10px]"
-                                                    />
-                                                );
-                                            }
-
-                                            const count = activityMap.get(day.date) ?? 0;
-                                            const level = getIntensityLevel(count);
-
-                                            return (
-                                                <Tooltip key={day.date}>
-                                                    <TooltipTrigger asChild>
-                                                        <div
-                                                            className={cn(
-                                                                'h-[10px] w-[10px] rounded-[2px] transition-colors',
-                                                                level === 0 && 'bg-muted/60 hover:bg-muted',
-                                                                level === 1 && 'bg-emerald-200 dark:bg-emerald-900/80 hover:bg-emerald-300 dark:hover:bg-emerald-800',
-                                                                level === 2 && 'bg-emerald-400 dark:bg-emerald-700/90 hover:bg-emerald-500 dark:hover:bg-emerald-600',
-                                                                level === 3 && 'bg-emerald-500 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-500',
-                                                                level === 4 && 'bg-emerald-600 dark:bg-emerald-500 hover:bg-emerald-700 dark:hover:bg-emerald-400',
-                                                                day.isToday && 'ring-1 ring-foreground ring-offset-1 ring-offset-background'
-                                                            )}
-                                                        />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent
-                                                        side="top"
-                                                        className="text-xs"
-                                                    >
-                                                        <p className="font-medium">
-                                                            {count === 0
-                                                                ? 'No activity'
-                                                                : `${count} ${count === 1 ? 'contribution' : 'contributions'}`}
-                                                        </p>
-                                                        <p className="text-muted-foreground">
-                                                            {formatDateForDisplay(day.date)}
-                                                        </p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            );
-                                        })}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Legend */}
-                        <div className="mt-3 flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
-                            <span>Less</span>
-                            <div className="flex gap-[2px]">
-                                {[0, 1, 2, 3, 4].map((level) => (
-                                    <div
-                                        key={level}
-                                        className={cn(
-                                            'h-[10px] w-[10px] rounded-[2px]',
-                                            level === 0 && 'bg-muted/60',
-                                            level === 1 && 'bg-emerald-200 dark:bg-emerald-900/80',
-                                            level === 2 && 'bg-emerald-400 dark:bg-emerald-700/90',
-                                            level === 3 && 'bg-emerald-500 dark:bg-emerald-600',
-                                            level === 4 && 'bg-emerald-600 dark:bg-emerald-500'
-                                        )}
-                                    />
-                                ))}
-                            </div>
-                            <span>More</span>
+                            )}
                         </div>
                     </div>
-                </TooltipProvider>
-            </div>
-        </div>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleYearChange(year - 1)}
+                            disabled={year <= currentYear - 10}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="min-w-[4rem] text-center text-sm font-semibold">{year}</span>
+                        <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleYearChange(year + 1)}
+                            disabled={year >= currentYear}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
+                </div>
+            </CardHeader>
+
+            {/* Calendar Grid */}
+            <CardContent className="pt-0">
+                <div className="overflow-x-auto pb-2">
+                    <TooltipProvider delayDuration={0}>
+                        <div className="inline-block">
+                            {/* Month Labels Row */}
+                            <div className="flex mb-1" style={{ paddingLeft: '28px' }}>
+                                {monthLabels.map((month, idx) => (
+                                    <div
+                                        key={`${month.name}-${idx}`}
+                                        className="text-xs text-muted-foreground font-medium"
+                                        style={{
+                                            width: `${month.colSpan * WEEK_WIDTH}px`,
+                                        }}
+                                    >
+                                        {month.name}
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Calendar Grid with Day Labels */}
+                            <div className="flex">
+                                {/* Day Labels (Mon, Wed, Fri) */}
+                                <div className="flex flex-col gap-[3px] pr-1">
+                                    {[0, 1, 2, 3, 4, 5, 6].map((dayIndex) => (
+                                        <div
+                                            key={dayIndex}
+                                            className="flex items-center justify-end text-[10px] text-muted-foreground"
+                                            style={{ height: `${CELL_SIZE}px`, width: '24px' }}
+                                        >
+                                            {dayIndex % 2 === 1 ? DAYS_SHORT[dayIndex]?.slice(0, 3) : ''}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Week Columns */}
+                                <div className="flex gap-[3px]">
+                                    {weeks.map((week) => (
+                                        <div key={week.weekIndex} className="flex flex-col gap-[3px]">
+                                            {week.days.map((day, dayIndex) => {
+                                                if (!day) {
+                                                    return (
+                                                        <div
+                                                            key={`empty-${week.weekIndex}-${dayIndex}`}
+                                                            style={{ width: `${CELL_SIZE}px`, height: `${CELL_SIZE}px` }}
+                                                        />
+                                                    );
+                                                }
+
+                                                const count = activityMap.get(day.date) ?? 0;
+                                                const level = getIntensityLevel(count);
+
+                                                return (
+                                                    <Tooltip key={day.date}>
+                                                        <TooltipTrigger asChild>
+                                                            <div
+                                                                className={cn(
+                                                                    'rounded-sm cursor-pointer transition-all',
+                                                                    'hover:ring-2 hover:ring-foreground/20 hover:ring-offset-1',
+                                                                    level === 0 && 'bg-muted/50 dark:bg-muted/30',
+                                                                    level === 1 && 'bg-emerald-200 dark:bg-emerald-900',
+                                                                    level === 2 && 'bg-emerald-400 dark:bg-emerald-700',
+                                                                    level === 3 && 'bg-emerald-500 dark:bg-emerald-500',
+                                                                    level === 4 && 'bg-emerald-600 dark:bg-emerald-400',
+                                                                    day.isToday && 'ring-2 ring-primary ring-offset-1 ring-offset-background'
+                                                                )}
+                                                                style={{ width: `${CELL_SIZE}px`, height: `${CELL_SIZE}px` }}
+                                                            />
+                                                        </TooltipTrigger>
+                                                        <TooltipContent
+                                                            side="top"
+                                                            className="text-xs font-medium"
+                                                            sideOffset={5}
+                                                        >
+                                                            <p>{getContributionText(count)}</p>
+                                                            <p className="text-muted-foreground font-normal">
+                                                                {formatDateForDisplay(day.date)}
+                                                            </p>
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                );
+                                            })}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Legend */}
+                            <div className="flex items-center justify-between mt-3 text-xs text-muted-foreground">
+                                <a 
+                                    href="#" 
+                                    className="hover:text-foreground transition-colors"
+                                    onClick={(e) => e.preventDefault()}
+                                >
+                                    Learn how we count contributions
+                                </a>
+                                <div className="flex items-center gap-1.5">
+                                    <span>Less</span>
+                                    <div className="flex gap-[2px]">
+                                        {[0, 1, 2, 3, 4].map((level) => (
+                                            <div
+                                                key={level}
+                                                className={cn(
+                                                    'rounded-sm',
+                                                    level === 0 && 'bg-muted/50 dark:bg-muted/30',
+                                                    level === 1 && 'bg-emerald-200 dark:bg-emerald-900',
+                                                    level === 2 && 'bg-emerald-400 dark:bg-emerald-700',
+                                                    level === 3 && 'bg-emerald-500 dark:bg-emerald-500',
+                                                    level === 4 && 'bg-emerald-600 dark:bg-emerald-400'
+                                                )}
+                                                style={{ width: `${CELL_SIZE}px`, height: `${CELL_SIZE}px` }}
+                                            />
+                                        ))}
+                                    </div>
+                                    <span>More</span>
+                                </div>
+                            </div>
+                        </div>
+                    </TooltipProvider>
+                </div>
+
+                {/* Mobile Stats */}
+                <div className="flex sm:hidden items-center justify-center gap-4 mt-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                        <Target className="h-4 w-4 text-emerald-500" />
+                        <span>{stats.activeDays} active days</span>
+                    </div>
+                    {stats.maxStreak > 1 && (
+                        <div className="flex items-center gap-1.5">
+                            <Flame className="h-4 w-4 text-orange-500" />
+                            <span>{stats.maxStreak} day streak</span>
+                        </div>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
     );
 };
 
 // =============================================
-// Month View Calendar (Alternative compact view)
+// Compact Month View Calendar
 // =============================================
 
 interface IMonthCalendarProps {
@@ -481,48 +545,57 @@ export const MonthCalendar = ({
 
     if (loading) {
         return (
-            <div className="rounded-lg border bg-card p-4">
-                <div className="h-[200px] animate-pulse rounded bg-muted" />
-            </div>
+            <Card>
+                <CardContent className="p-4">
+                    <div className="h-[220px] animate-pulse rounded bg-muted" />
+                </CardContent>
+            </Card>
         );
     }
 
     const todayStr = today.toISOString().split('T')[0];
 
     return (
-        <div className="rounded-lg border bg-card">
-            <div className="flex items-center justify-between border-b px-4 py-3">
-                <h3 className="text-sm font-medium">
-                    {MONTHS[month]} {year}
-                </h3>
-                <div className="flex items-center gap-1">
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={goToPrevMonth}
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={goToNextMonth}
-                        disabled={month === today.getMonth() && year === today.getFullYear()}
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
+        <Card>
+            <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="font-semibold">
+                            {MONTHS[month]} {year}
+                        </h3>
+                        <p className="text-xs text-muted-foreground">
+                            {monthStats} contributions
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={goToPrevMonth}
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={goToNextMonth}
+                            disabled={month === today.getMonth() && year === today.getFullYear()}
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
-            </div>
-            <div className="p-4">
-                <TooltipProvider delayDuration={50}>
+            </CardHeader>
+            <CardContent className="pt-0">
+                <TooltipProvider delayDuration={0}>
                     {/* Weekday headers */}
-                    <div className="mb-2 grid grid-cols-7 gap-1">
+                    <div className="grid grid-cols-7 gap-1 mb-1">
                         {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
                             <div
                                 key={i}
-                                className="text-center text-xs text-muted-foreground"
+                                className="text-center text-xs font-medium text-muted-foreground py-1"
                             >
                                 {day}
                             </div>
@@ -545,24 +618,21 @@ export const MonthCalendar = ({
                                     <TooltipTrigger asChild>
                                         <div
                                             className={cn(
-                                                'aspect-square flex items-center justify-center rounded text-xs transition-colors',
-                                                level === 0 && 'bg-muted/40 text-muted-foreground',
-                                                level === 1 && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
-                                                level === 2 && 'bg-emerald-200 text-emerald-800 dark:bg-emerald-800/60 dark:text-emerald-200',
+                                                'aspect-square flex items-center justify-center rounded-md text-xs font-medium cursor-pointer transition-all',
+                                                'hover:ring-2 hover:ring-foreground/20',
+                                                level === 0 && 'bg-muted/40 text-muted-foreground hover:bg-muted/60',
+                                                level === 1 && 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300',
+                                                level === 2 && 'bg-emerald-200 text-emerald-800 dark:bg-emerald-800/70 dark:text-emerald-200',
                                                 level === 3 && 'bg-emerald-400 text-white dark:bg-emerald-600',
-                                                level === 4 && 'bg-emerald-600 text-white dark:bg-emerald-500',
-                                                isToday && 'ring-1 ring-foreground'
+                                                level === 4 && 'bg-emerald-600 text-white dark:bg-emerald-400 dark:text-emerald-950',
+                                                isToday && 'ring-2 ring-primary'
                                             )}
                                         >
                                             {day.day}
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent side="top" className="text-xs">
-                                        <p className="font-medium">
-                                            {count === 0
-                                                ? 'No activity'
-                                                : `${count} ${count === 1 ? 'contribution' : 'contributions'}`}
-                                        </p>
+                                        <p className="font-medium">{getContributionText(count)}</p>
                                         <p className="text-muted-foreground">
                                             {formatDateForDisplay(day.date)}
                                         </p>
@@ -572,12 +642,7 @@ export const MonthCalendar = ({
                         })}
                     </div>
                 </TooltipProvider>
-
-                {/* Monthly stats */}
-                <div className="mt-3 text-center text-xs text-muted-foreground">
-                    {monthStats} contributions this month
-                </div>
-            </div>
-        </div>
+            </CardContent>
+        </Card>
     );
 };

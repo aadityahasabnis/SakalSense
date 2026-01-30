@@ -1,8 +1,9 @@
-'use server';
-
 // =============================================
 // Content Actions - Re-export all content actions for backwards compatibility
 // =============================================
+// NOTE: This file does NOT have 'use server' because it re-exports from
+// other 'use server' modules. Each source module has its own 'use server'.
+//
 // This file was split into smaller modules:
 // - contentQueryActions.ts (List, Get)
 // - contentCrudActions.ts (Create, Update, Delete)

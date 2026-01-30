@@ -111,54 +111,93 @@ export const getContentComments = async (
 ): Promise<ICommentListResponse> => {
     try {
         const { page = 1, limit = 20 } = filters;
+        
+        // Get current user to check which comments they've liked
+        const currentUser = await getCurrentUser(STAKEHOLDER.USER);
+        const userId = currentUser?.userId;
 
         // Get top-level comments with their replies
-        const [data, total] = await Promise.all([
-            prisma.comment.findMany({
-                where: {
-                    contentId,
-                    parentId: null, // Only top-level comments
-                },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            fullName: true,
-                            avatarLink: true,
-                        },
+        const comments = await prisma.comment.findMany({
+            where: {
+                contentId,
+                parentId: null, // Only top-level comments
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        avatarLink: true,
                     },
-                    replies: {
-                        include: {
-                            user: {
-                                select: {
-                                    id: true,
-                                    fullName: true,
-                                    avatarLink: true,
-                                },
+                },
+                replies: {
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                fullName: true,
+                                avatarLink: true,
                             },
                         },
-                        orderBy: {
-                            createdAt: 'asc',
-                        },
+                    },
+                    orderBy: {
+                        createdAt: 'asc',
                     },
                 },
-                orderBy: {
-                    createdAt: 'desc',
-                },
-                skip: (page - 1) * limit,
-                take: limit,
-            }),
-            prisma.comment.count({
+            },
+            orderBy: {
+                createdAt: 'desc',
+            },
+            skip: (page - 1) * limit,
+            take: limit,
+        });
+
+        const total = await prisma.comment.count({
+            where: {
+                contentId,
+                parentId: null,
+            },
+        });
+
+        // If user is logged in, check which comments they've liked
+        let likedCommentIds: Set<string> = new Set();
+        if (userId) {
+            // Get all comment IDs (including replies)
+            const allCommentIds: string[] = [];
+            for (const comment of comments) {
+                allCommentIds.push(comment.id);
+                if (comment.replies) {
+                    for (const reply of comment.replies) {
+                        allCommentIds.push(reply.id);
+                    }
+                }
+            }
+
+            // Fetch which comments the user has liked
+            const userLikes = await prisma.commentLike.findMany({
                 where: {
-                    contentId,
-                    parentId: null,
+                    userId,
+                    commentId: { in: allCommentIds },
                 },
-            }),
-        ]);
+                select: { commentId: true },
+            });
+
+            likedCommentIds = new Set(userLikes.map((like) => like.commentId));
+        }
+
+        // Transform data to include isLiked field
+        const transformedData = comments.map((comment) => ({
+            ...comment,
+            isLiked: likedCommentIds.has(comment.id),
+            replies: comment.replies?.map((reply) => ({
+                ...reply,
+                isLiked: likedCommentIds.has(reply.id),
+            })),
+        }));
 
         return {
             success: true,
-            data: data as ICommentListResponse['data'],
+            data: transformedData as unknown as ICommentListResponse['data'],
             total,
         };
     } catch (error) {

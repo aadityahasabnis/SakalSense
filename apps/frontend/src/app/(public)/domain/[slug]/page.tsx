@@ -6,6 +6,7 @@ import { type Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { DomainClient } from '@/components/content/DomainClient';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 import { getDomainBySlug } from '@/server/actions/content/taxonomyActions';
 
 interface IDomainPageProps {
@@ -37,8 +38,10 @@ export default async function DomainPage({ params }: IDomainPageProps) {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
-            <DomainClient domain={response.data as Parameters<typeof DomainClient>[0]['domain']} />
-        </div>
+        <PublicLayout>
+            <div className="container mx-auto px-4 py-8">
+                <DomainClient domain={response.data as Parameters<typeof DomainClient>[0]['domain']} />
+            </div>
+        </PublicLayout>
     );
 }

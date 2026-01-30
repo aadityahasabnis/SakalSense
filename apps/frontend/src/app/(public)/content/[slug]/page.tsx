@@ -8,9 +8,8 @@ import { Suspense } from 'react';
 
 import { ContentViewClient } from './ContentViewClient';
 
+import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Skeleton } from '@/components/ui/skeleton';
-import { STAKEHOLDER } from '@/constants/auth.constants';
-import { getCurrentUser } from '@/lib/auth';
 import { getContentBySlug } from '@/server/actions/content/publicContentActions';
 
 interface IContentPageProps {
@@ -56,12 +55,11 @@ const ContentViewSkeleton = () => (
 export default async function ContentPage({ params }: IContentPageProps) {
     const { slug } = await params;
 
-    // Get current user if logged in (optional - content is public)
-    const user = await getCurrentUser(STAKEHOLDER.USER).catch(() => null);
-
     return (
-        <Suspense fallback={<ContentViewSkeleton />}>
-            <ContentViewClient slug={slug} userId={user?.userId} />
-        </Suspense>
+        <PublicLayout>
+            <Suspense fallback={<ContentViewSkeleton />}>
+                <ContentViewClient slug={slug} />
+            </Suspense>
+        </PublicLayout>
     );
 }

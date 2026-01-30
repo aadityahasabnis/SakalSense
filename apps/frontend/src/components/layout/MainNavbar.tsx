@@ -14,13 +14,16 @@ import {
     Bell,
     Bookmark,
     BookOpen,
+    ClipboardList,
     Code,
     FileText,
     GraduationCap,
     History,
     Home,
+    LayoutDashboard,
     Layers,
     Menu,
+    Rss,
     Search,
     Settings,
     User,
@@ -56,6 +59,9 @@ const mainNavLinks = [
 ];
 
 const userMenuLinks = [
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/feed', label: 'Activity Feed', icon: Rss },
+    { href: '/dashboard/submissions', label: 'My Submissions', icon: ClipboardList },
     { href: '/profile', label: 'Profile', icon: User },
     { href: '/profile?tab=bookmarks', label: 'Bookmarks', icon: Bookmark },
     { href: '/profile?tab=activity', label: 'Activity', icon: History },
